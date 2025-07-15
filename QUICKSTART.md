@@ -42,7 +42,7 @@ For better performance with large document collections:
 
 ```bash
 # Download Milvus
-wget https://github.com/milvus-io/milvus/releases/download/v2.4.0/milvus-standalone-docker-compose.yml
+wget https://github.com/milvus-io/milvus/releases/download/v2.5.14/milvus-standalone-docker-compose.yml
 
 # Start Milvus
 docker-compose -f milvus-standalone-docker-compose.yml up -d

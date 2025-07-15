@@ -7,7 +7,7 @@ import re
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import ChatOpenAI
-
+from pydantic import SecretStr
 from models import DocumentSource, DocumentType, AgentState
 from vector_store import vector_store
 from config import config
@@ -19,7 +19,7 @@ class PDFAgent:
         self.llm = ChatOpenAI(
             model=config.OPENAI_MODEL,
             temperature=config.TEMPERATURE,
-            api_key=config.OPENAI_API_KEY
+            api_key=SecretStr(config.OPENAI_API_KEY)
         )
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=config.MAX_TOKENS_PER_CHUNK,

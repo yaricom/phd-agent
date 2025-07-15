@@ -1,5 +1,6 @@
 # the data
 data/
+output/
 
 # the docker data
 docker/
