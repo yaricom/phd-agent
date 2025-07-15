@@ -63,7 +63,7 @@ A comprehensive multi-agent system for deep research using LangGraph API, featur
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone git@github.com:yaricom/phd-agent.git
    cd phd-agent
    ```
 
