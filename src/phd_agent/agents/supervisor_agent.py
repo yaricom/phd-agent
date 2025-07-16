@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from pydantic import SecretStr
-from ..models import ResearchTask, AgentState, AgentMessage
+from ..models import ResearchTask, AgentState, AgentMessage, WorkflowStatus, TaskDetails, EssaySummary
 from .pdf_agent import PDFAgent
 from .web_search_agent import WebSearchAgent
 from .analyst_agent import AnalystAgent
@@ -262,15 +262,15 @@ class SupervisorAgent:
         
         return state
     
-    def get_workflow_status(self, state: AgentState) -> Dict[str, Any]:
+    def get_workflow_status(self, state: AgentState) -> WorkflowStatus:
         """Get a summary of the current workflow status."""
-        status = {
-            "task": {
-                "topic": state.task.topic,
-                "requirements": state.task.requirements,
-                "max_sources": state.task.max_sources,
-                "essay_length": state.task.essay_length
-            },
+        status_data = {
+            "task": TaskDetails(
+                topic=state.task.topic,
+                requirements=state.task.requirements,
+                max_sources=state.task.max_sources,
+                essay_length=state.task.essay_length
+            ),
             "current_step": state.current_step,
             "documents_collected": len(state.documents),
             "search_results": len(state.search_results),
@@ -281,13 +281,13 @@ class SupervisorAgent:
         }
         
         if state.final_essay:
-            status["essay"] = {
-                "title": state.final_essay.title,
-                "word_count": state.final_essay.word_count,
-                "sources_used": len(state.final_essay.sources)
-            }
+            status_data["essay_summary"] = EssaySummary(
+                title=state.final_essay.title,
+                word_count=state.final_essay.word_count,
+                sources_used=len(state.final_essay.sources)
+            )
         
-        return status
+        return WorkflowStatus(**status_data)
     
     def run(self, topic: str, requirements: str, max_sources: int = 10, 
            essay_length: str = "medium", pdf_paths: Optional[List[str]] = None) -> AgentState:

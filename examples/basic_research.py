@@ -61,15 +61,15 @@ def main():
         
         # Show workflow status
         status = supervisor.get_workflow_status(state)
-        logger.info(f"Task: {status['task']['topic']}")
-        logger.info(f"Current Step: {status['current_step']}")
-        logger.info(f"Documents Collected: {status['documents_collected']}")
-        logger.info(f"Search Results: {status['search_results']}")
-        logger.info(f"Has Essay: {status['has_essay']}")
+        logger.info(f"Task: {status.task.topic}")
+        logger.info(f"Current Step: {status.current_step}")
+        logger.info(f"Documents Collected: {status.documents_collected}")
+        logger.info(f"Search Results: {status.search_results}")
+        logger.info(f"Has Essay: {status.has_essay}")
         
-        if status['errors']:
-            logger.error(f"Errors encountered: {len(status['errors'])}")
-            for error in status['errors']:
+        if status.errors:
+            logger.error(f"Errors encountered: {len(status.errors)}")
+            for error in status.errors:
                 logger.error(f"  - {error}")
         
         # Show essay if available

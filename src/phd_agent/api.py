@@ -14,7 +14,7 @@ import tempfile
 import shutil
 
 from phd_agent.agents.supervisor_agent import SupervisorAgent
-from phd_agent.models import AgentState
+from phd_agent.models import AgentState, WorkflowStatus
 from phd_agent.config import config
 
 # Initialize FastAPI app
@@ -124,12 +124,12 @@ async def get_task_status(task_id: str):
     
     return TaskStatus(
         task_id=task_id,
-        topic=state.task.topic,
-        current_step=state.current_step,
-        documents_collected=len(state.documents),
-        search_results=len(state.search_results),
-        has_essay=state.final_essay is not None,
-        errors=state.errors,
+        topic=status.task.topic,
+        current_step=status.current_step,
+        documents_collected=status.documents_collected,
+        search_results=status.search_results,
+        has_essay=status.has_essay,
+        errors=status.errors,
         created_at=state.task.created_at.isoformat()
     )
 

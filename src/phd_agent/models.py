@@ -80,4 +80,29 @@ class RelevanceAssessment(BaseModel):
     relevance_score: float  # 0.0 to 1.0
     reasoning: str
     key_points: List[str]
-    confidence: float  # 0.0 to 1.0 
+    confidence: float  # 0.0 to 1.0
+
+class TaskDetails(BaseModel):
+    """Details of a research task."""
+    topic: str
+    requirements: str
+    max_sources: int
+    essay_length: str
+
+class EssaySummary(BaseModel):
+    """Details of a completed essay."""
+    title: str
+    word_count: int
+    sources_used: int
+
+class WorkflowStatus(BaseModel):
+    """Status information for a research workflow."""
+    task: TaskDetails
+    current_step: str
+    documents_collected: int
+    search_results: int
+    errors: List[str]
+    has_outline: bool
+    has_essay: bool
+    analysis_results: Dict[str, Any]
+    essay_summary: Optional[EssaySummary] = None 
