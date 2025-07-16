@@ -1,6 +1,7 @@
 import os
 from typing import Optional
-from pydantic import BaseSettings, validator
+from pydantic import BaseModel, field_validator
+from pydantic_settings import BaseSettings
 import logging
 
 # Configure logging
@@ -20,7 +21,7 @@ class Config(BaseSettings):
     
     # OpenAI Configuration
     OPENAI_API_KEY: str = ""
-    OPENAI_MODEL: str = "gpt-3.5-turbo"
+    OPENAI_MODEL: str = "gpt-4.1-mini"
     TEMPERATURE: float = 0.7
     
     # Milvus Configuration
@@ -43,7 +44,8 @@ class Config(BaseSettings):
     class Config:
         env_file = ".env"
     
-    @validator('OPENAI_API_KEY')
+    @field_validator('OPENAI_API_KEY')
+    @classmethod
     def validate_openai_key(cls, v):
         if not v:
             logger.warning("OpenAI API key not set")
