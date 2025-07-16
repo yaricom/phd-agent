@@ -120,14 +120,14 @@ RELEVANCE_THRESHOLD=0.6
 
 1. **Basic research without PDFs**
    ```bash
-   python main.py \
+   python src/main.py \
      --topic "Artificial Intelligence in Healthcare" \
      --requirements "Analyze current applications and future trends"
    ```
 
 2. **Research with PDF documents only (no web search)**
    ```bash
-   python main.py \
+   python src/main.py \
      --topic "Machine Learning" \
      --requirements "Review recent advances" \
      --pdfs papers/ \
@@ -136,7 +136,7 @@ RELEVANCE_THRESHOLD=0.6
 
 3. **Research with PDF documents and web search**
    ```bash
-   python main.py \
+   python src/main.py \
      --topic "Machine Learning" \
      --requirements "Review recent advances" \
      --pdfs papers/ research/
@@ -144,7 +144,7 @@ RELEVANCE_THRESHOLD=0.6
 
 4. **Custom configuration**
    ```bash
-   python main.py \
+   python src/main.py \
      --topic "Climate Change" \
      --requirements "Economic impacts" \
      --max-sources 15 \
@@ -240,7 +240,7 @@ ENABLE_WEB_SEARCH=true  # Set to false to disable web search
 
 ### Command Line
 ```bash
-python main.py --topic "Your Topic" --no-web-search
+python src/main.py --topic "Your Topic" --no-web-search
 ```
 
 ### API

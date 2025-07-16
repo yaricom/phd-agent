@@ -12,7 +12,7 @@ from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
 
 from ..models import DocumentSource, DocumentType, SearchResult, AgentState
-from ..vector_store import vector_store
+from ..vector_store import get_vector_store
 from ..config import config
 
 logger = logging.getLogger(__name__)
@@ -148,7 +148,7 @@ class WebSearchAgent:
         
         for document in documents:
             try:
-                doc_id = vector_store.add_document(document)
+                doc_id = get_vector_store().add_document(document)
                 stored_ids.append(doc_id)
             except Exception as e:
                 logger.error(f"Error storing web document {document.title}: {e}")

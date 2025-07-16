@@ -25,7 +25,7 @@ python test_system.py
 
 ### 4. Run Your First Research
 ```bash
-python main.py \
+python src/main.py \
   --topic "Machine Learning Applications" \
   --requirements "Analyze current trends and future directions"
 ```
@@ -52,14 +52,14 @@ docker-compose -f milvus-standalone-docker-compose.yml up -d
 
 ### Basic Research
 ```bash
-python main.py \
+python src/main.py \
   --topic "Climate Change" \
   --requirements "Economic impacts and mitigation strategies"
 ```
 
 ### Research with PDFs
 ```bash
-python main.py \
+python src/main.py \
   --topic "Quantum Computing" \
   --requirements "Current state and applications" \
   --pdfs papers/quantum.pdf research/
@@ -67,7 +67,7 @@ python main.py \
 
 ### Custom Configuration
 ```bash
-python main.py \
+python src/main.py \
   --topic "AI in Healthcare" \
   --requirements "Ethical considerations and implementation challenges" \
   --max-sources 15 \
@@ -146,4 +146,4 @@ curl -X POST "http://localhost:8000/research/start" \
 
 ---
 
-**Ready to start researching?** Run `python main.py --help` to see all options! 
+**Ready to start researching?** Run `python src/main.py --help` to see all options! 

@@ -7,11 +7,11 @@ without requiring external services like Milvus or OpenAI API.
 """
 
 import sys
-import os
 from pathlib import Path
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root / "src"))
+
 
 def test_imports():
     """Test that all modules can be imported."""
@@ -195,16 +195,14 @@ def test_file_structure():
     print("\nTesting file structure...")
     
     required_files = [
-        "requirements.txt",
         "pyproject.toml",
-        "setup.py",
+        "dev_setup.py",
         "README.md",
         "src/phd_agent/__init__.py",
         "src/phd_agent/config.py",
         "src/phd_agent/models.py",
         "src/phd_agent/vector_store.py",
         "src/phd_agent/vector_store_mock.py",
-        "src/phd_agent/main.py",
         "src/phd_agent/api.py",
         "src/phd_agent/agents/__init__.py",
         "src/phd_agent/agents/supervisor_agent.py",

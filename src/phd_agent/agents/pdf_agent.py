@@ -10,7 +10,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
 from ..models import DocumentSource, DocumentType, AgentState
-from ..vector_store import vector_store
+from ..vector_store import get_vector_store
 from ..config import config
 
 logger = logging.getLogger(__name__)
@@ -105,7 +105,7 @@ class PDFAgent:
         
         for document in documents:
             try:
-                doc_id = vector_store.add_document(document)
+                doc_id = get_vector_store().add_document(document)
                 stored_ids.append(doc_id)
             except Exception as e:
                 logger.error(f"Error storing document {document.title}: {e}")
@@ -117,7 +117,7 @@ class PDFAgent:
     def search_local_documents(self, query: str, top_k: int = 5) -> List[DocumentSource]:
         """Search for relevant documents in the local vector database."""
         try:
-            documents = vector_store.search_similar(query, top_k=top_k)
+            documents = get_vector_store().search_similar(query, top_k=top_k)
             return documents
         except Exception as e:
             logger.error(f"Error searching local documents: {e}")
@@ -126,7 +126,7 @@ class PDFAgent:
     def get_document_statistics(self) -> Dict[str, Any]:
         """Get statistics about stored documents."""
         try:
-            stats = vector_store.get_collection_stats()
+            stats = get_vector_store().get_collection_stats()
             return stats
         except Exception as e:
             logger.error(f"Error getting document statistics: {e}")

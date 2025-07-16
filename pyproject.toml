@@ -11,8 +11,9 @@ license = { file = "LICENSE" }
 dependencies = [
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
-    "langchain>=0.1.0",
-    "langchain-openai>=0.1.0",
+    "langchain>=0.3.26",
+    "langchain-openai>=0.3.26",
+    "langgraph>=0.5.3",
     "sentence-transformers>=2.2.2",
     "pymilvus>=2.3.0",
     "PyMuPDF>=1.22.0",

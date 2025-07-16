@@ -7,12 +7,14 @@ for a simple research task without PDF documents.
 """
 
 import sys
-import os
 import logging
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from pathlib import Path
 
-from agents.supervisor_agent import SupervisorAgent
-from config import config
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root / "src"))
+
+from phd_agent.agents.supervisor_agent import SupervisorAgent
+from phd_agent.config import config
 
 logger = logging.getLogger(__name__)
 

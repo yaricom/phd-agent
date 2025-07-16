@@ -71,6 +71,12 @@ class MilvusVectorStore:
         embedding = self.embedding_model.encode(text)
         return embedding.tolist()
     
+    def _truncate_field(self, text: str, max_length: int) -> str:
+        """Truncate text to fit within the specified maximum length."""
+        if len(text) <= max_length:
+            return text
+        return text[:max_length-3] + "..."
+    
     def add_document(self, document: DocumentSource) -> str:
         """Add a document to the vector store."""
         if not document.id:
@@ -83,16 +89,31 @@ class MilvusVectorStore:
         # Generate embedding
         embedding = self._get_embedding(document.content)
         
+        # Truncate fields to fit Milvus schema limits
+        truncated_title = self._truncate_field(document.title, 500)
+        truncated_content = self._truncate_field(document.content, 65535)
+        truncated_url = self._truncate_field(document.url or "", 1000)
+        truncated_file_path = self._truncate_field(document.file_path or "", 500)
+        truncated_metadata = self._truncate_field(str(document.metadata), 2000)
+        
+        # Log if truncation occurred
+        if len(document.title) > 500:
+            logger.warning(f"Title truncated from {len(document.title)} to {len(truncated_title)} characters: {document.title[:100]}...")
+        if len(document.content) > 65535:
+            logger.warning(f"Content truncated from {len(document.content)} to {len(truncated_content)} characters")
+        if document.url and len(document.url) > 1000:
+            logger.warning(f"URL truncated from {len(document.url)} to {len(truncated_url)} characters")
+        
         # Prepare data
         data = [
             [document.id],
-            [document.title],
-            [document.content],
+            [truncated_title],
+            [truncated_content],
             [document.source_type.value],
-            [document.url or ""],
-            [document.file_path or ""],
+            [truncated_url],
+            [truncated_file_path],
             [embedding],
-            [str(document.metadata)],
+            [truncated_metadata],
             [document.created_at.isoformat()]
         ]
         
@@ -100,7 +121,7 @@ class MilvusVectorStore:
         self.collection.insert(data)
         self.collection.flush()
         
-        logger.info(f"Added document: {document.title}")
+        logger.info(f"Added document: {truncated_title}")
         return document.id
     
     def search_similar(self, query: str, top_k: int = 5, filter_dict: Optional[Dict] = None) -> List[DocumentSource]:
@@ -205,10 +226,16 @@ class MilvusVectorStore:
         }
         return stats
 
-# Global vector store instance
-try:
-    vector_store = MilvusVectorStore()
-except Exception as e:
-    logger.warning(f"Milvus not available ({e}), using mock vector store")
-    from vector_store_mock import mock_vector_store
-    vector_store = mock_vector_store 
+
+vector_store = None
+
+def get_vector_store(): 
+    global vector_store
+    if vector_store is None:
+        try:
+            vector_store = MilvusVectorStore()
+        except Exception as e:
+            logger.warning(f"Milvus not available ({e}), using mock vector store")
+            from .vector_store_mock import mock_vector_store
+            vector_store = mock_vector_store
+    return vector_store

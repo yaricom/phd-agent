@@ -1,8 +1,13 @@
-import os
-from typing import Optional
-from pydantic import BaseModel, field_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 import logging
+import os
+from pathlib import Path
+
+# Get the project root directory (2 levels up from this file)
+project_root = Path(__file__).parent.parent.parent
+logs_dir = project_root / "logs"
+logs_dir.mkdir(exist_ok=True)
 
 # Configure logging
 logging.basicConfig(
@@ -10,7 +15,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler('logs/phd_agent.log')
+        logging.FileHandler(logs_dir / "phd_agent.log")
     ]
 )
 
