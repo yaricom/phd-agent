@@ -6,7 +6,7 @@ Get up and running with the multi-agent research system in minutes!
 
 ### 1. Install Dependencies
 ```bash
-pip install -r requirements.txt
+pip install -e ".[api]"
 ```
 
 ### 2. Set Up Environment
@@ -18,9 +18,9 @@ cp .env.example .env
 echo "OPENAI_API_KEY=your_actual_api_key_here" >> .env
 ```
 
-### 3. Test the System
+### 3. Check the System
 ```bash
-python test_system.py
+python check_system.py
 ```
 
 ### 4. Run Your First Research
