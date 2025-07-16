@@ -68,8 +68,15 @@ A comprehensive multi-agent system for deep research using LangGraph API, featur
    ```
 
 2. **Install with dependencies**
+
+   To use only Python API:
    ```bash
    pip install -e .
+   ```
+
+   To use web API as well:
+   ```bash
+   pip install -e ".[api]"
    ```
 
 3. **Set up environment variables**
