@@ -67,9 +67,9 @@ A comprehensive multi-agent system for deep research using LangGraph API, featur
    cd phd-agent
    ```
 
-2. **Install dependencies**
+2. **Install with dependencies**
    ```bash
-   pip install -r requirements.txt
+   pip install -e .
    ```
 
 3. **Set up environment variables**
@@ -282,12 +282,8 @@ python src/main.py --topic "Your Topic" --no-web-search
 ## 🧪 Testing
 
 ```bash
-# Run basic tests
-python -m pytest tests/
-
-# Test specific components
-python -m pytest tests/test_pdf_agent.py
-python -m pytest tests/test_web_search_agent.py
+# Run basic system check
+python check_system.py
 ```
 
 ## 📈 Performance
