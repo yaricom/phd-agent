@@ -78,7 +78,7 @@ python src/main.py \
 ### Web API
 ```bash
 # Start the API server
-python api.py
+python src/phd_agent/api.py
 
 # Use the API
 curl -X POST "http://localhost:8000/research/start" \

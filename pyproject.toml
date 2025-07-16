@@ -31,6 +31,9 @@ dev = [
     "ruff",
     "black"
 ]
+api = [
+    "python-multipart"
+]
 
 [project.scripts]
 phd-agent = "phd_agent.main:main"

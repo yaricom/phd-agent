@@ -9,15 +9,13 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import uuid
-import asyncio
-import sys
 from pathlib import Path
 import tempfile
 import shutil
 
-from .agents.supervisor_agent import SupervisorAgent
-from .models import ResearchTask, AgentState
-from .config import config
+from phd_agent.agents.supervisor_agent import SupervisorAgent
+from phd_agent.models import AgentState
+from phd_agent.config import config
 
 # Initialize FastAPI app
 app = FastAPI(
