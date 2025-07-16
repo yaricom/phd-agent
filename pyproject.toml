@@ -1,0 +1,42 @@
+[project]
+name = "phd-agent"
+version = "0.1.0"
+description = "A multi-agent research system for deep research using PDF analysis, web search, and AI-powered essay writing."
+authors = [
+    { name = "Iaroslav Omelianenko", email = "yaric_mail@yahoo.com" }
+]
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+dependencies = [
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "langchain>=0.1.0",
+    "langchain-openai>=0.1.0",
+    "sentence-transformers>=2.2.2",
+    "pymilvus>=2.3.0",
+    "PyMuPDF>=1.22.0",
+    "requests>=2.28.0",
+    "beautifulsoup4>=4.11.0",
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.23.0",
+    "ddgs>=9.2.3"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "black"
+]
+
+[project.scripts]
+phd-agent = "phd_agent.main:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"] 

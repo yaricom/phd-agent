@@ -10,55 +10,79 @@ import sys
 import os
 from pathlib import Path
 
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
 def test_imports():
     """Test that all modules can be imported."""
     print("Testing imports...")
     
     try:
-        import config
+        import phd_agent.config
         print("✅ config module imported")
+    except ImportError as e:
+        print(f"⚠️  config import failed (expected if package not installed): {e}")
+        return False
     except Exception as e:
         print(f"❌ config import failed: {e}")
         return False
     
     try:
-        from models import ResearchTask, DocumentSource, DocumentType
+        from phd_agent.models import ResearchTask, DocumentSource, DocumentType
         print("✅ models module imported")
+    except ImportError as e:
+        print(f"⚠️  models import failed (expected if package not installed): {e}")
+        return False
     except Exception as e:
         print(f"❌ models import failed: {e}")
         return False
     
     try:
-        from agents.supervisor_agent import SupervisorAgent
+        from phd_agent.agents.supervisor_agent import SupervisorAgent
         print("✅ supervisor_agent module imported")
+    except ImportError as e:
+        print(f"⚠️  supervisor_agent import failed (expected if package not installed): {e}")
+        return False
     except Exception as e:
         print(f"❌ supervisor_agent import failed: {e}")
         return False
     
     try:
-        from agents.pdf_agent import PDFAgent
+        from phd_agent.agents.pdf_agent import PDFAgent
         print("✅ pdf_agent module imported")
+    except ImportError as e:
+        print(f"⚠️  pdf_agent import failed (expected if package not installed): {e}")
+        return False
     except Exception as e:
         print(f"❌ pdf_agent import failed: {e}")
         return False
     
     try:
-        from agents.web_search_agent import WebSearchAgent
+        from phd_agent.agents.web_search_agent import WebSearchAgent
         print("✅ web_search_agent module imported")
+    except ImportError as e:
+        print(f"⚠️  web_search_agent import failed (expected if package not installed): {e}")
+        return False
     except Exception as e:
         print(f"❌ web_search_agent import failed: {e}")
         return False
     
     try:
-        from agents.analyst_agent import AnalystAgent
+        from phd_agent.agents.analyst_agent import AnalystAgent
         print("✅ analyst_agent module imported")
+    except ImportError as e:
+        print(f"⚠️  analyst_agent import failed (expected if package not installed): {e}")
+        return False
     except Exception as e:
         print(f"❌ analyst_agent import failed: {e}")
         return False
     
     try:
-        from agents.essay_writer_agent import EssayWriterAgent
+        from phd_agent.agents.essay_writer_agent import EssayWriterAgent
         print("✅ essay_writer_agent module imported")
+    except ImportError as e:
+        print(f"⚠️  essay_writer_agent import failed (expected if package not installed): {e}")
+        return False
     except Exception as e:
         print(f"❌ essay_writer_agent import failed: {e}")
         return False
@@ -70,7 +94,7 @@ def test_config():
     print("\nTesting configuration...")
     
     try:
-        from config import config
+        from phd_agent.config import config
         
         # Test basic config attributes
         assert hasattr(config, 'OPENAI_API_KEY'), "Missing OPENAI_API_KEY"
@@ -93,7 +117,7 @@ def test_models():
     print("\nTesting data models...")
     
     try:
-        from models import ResearchTask, DocumentSource, DocumentType, AgentState
+        from phd_agent.models import ResearchTask, DocumentSource, DocumentType, AgentState
         from datetime import datetime
         
         # Test ResearchTask creation
@@ -136,27 +160,27 @@ def test_agent_initialization():
     
     try:
         # Test supervisor agent initialization
-        from agents.supervisor_agent import SupervisorAgent
+        from phd_agent.agents.supervisor_agent import SupervisorAgent
         supervisor = SupervisorAgent()
         print("✅ Supervisor agent initialized")
         
         # Test PDF agent initialization
-        from agents.pdf_agent import PDFAgent
+        from phd_agent.agents.pdf_agent import PDFAgent
         pdf_agent = PDFAgent()
         print("✅ PDF agent initialized")
         
         # Test web search agent initialization
-        from agents.web_search_agent import WebSearchAgent
+        from phd_agent.agents.web_search_agent import WebSearchAgent
         web_agent = WebSearchAgent()
         print("✅ Web search agent initialized")
         
         # Test analyst agent initialization
-        from agents.analyst_agent import AnalystAgent
+        from phd_agent.agents.analyst_agent import AnalystAgent
         analyst_agent = AnalystAgent()
         print("✅ Analyst agent initialized")
         
         # Test essay writer agent initialization
-        from agents.essay_writer_agent import EssayWriterAgent
+        from phd_agent.agents.essay_writer_agent import EssayWriterAgent
         essay_agent = EssayWriterAgent()
         print("✅ Essay writer agent initialized")
         
@@ -172,19 +196,22 @@ def test_file_structure():
     
     required_files = [
         "requirements.txt",
-        "config.py",
-        "models.py",
-        "vector_store.py",
-        "main.py",
-        "api.py",
+        "pyproject.toml",
         "setup.py",
         "README.md",
-        "agents/__init__.py",
-        "agents/supervisor_agent.py",
-        "agents/pdf_agent.py",
-        "agents/web_search_agent.py",
-        "agents/analyst_agent.py",
-        "agents/essay_writer_agent.py",
+        "src/phd_agent/__init__.py",
+        "src/phd_agent/config.py",
+        "src/phd_agent/models.py",
+        "src/phd_agent/vector_store.py",
+        "src/phd_agent/vector_store_mock.py",
+        "src/phd_agent/main.py",
+        "src/phd_agent/api.py",
+        "src/phd_agent/agents/__init__.py",
+        "src/phd_agent/agents/supervisor_agent.py",
+        "src/phd_agent/agents/pdf_agent.py",
+        "src/phd_agent/agents/web_search_agent.py",
+        "src/phd_agent/agents/analyst_agent.py",
+        "src/phd_agent/agents/essay_writer_agent.py",
         "examples/basic_research.py"
     ]
     

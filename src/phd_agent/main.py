@@ -13,8 +13,8 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 
-from agents.supervisor_agent import SupervisorAgent
-from config import config
+from .agents.supervisor_agent import SupervisorAgent
+from .config import config
 
 logger = logging.getLogger(__name__)
 

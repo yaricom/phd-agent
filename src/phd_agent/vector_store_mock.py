@@ -11,7 +11,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 import numpy as np
 
-from models import DocumentSource, DocumentType
+from .models import DocumentSource, DocumentType
 
 logger = logging.getLogger(__name__)
 

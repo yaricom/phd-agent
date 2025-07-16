@@ -11,10 +11,12 @@ import subprocess
 import shutil
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent / "src"))
+
 def check_python_version():
     """Check if Python version is compatible."""
-    if sys.version_info < (3, 8):
-        print("❌ Python 3.8 or higher is required")
+    if sys.version_info < (3, 11):
+        print("❌ Python 3.11 or higher is required")
         print(f"Current version: {sys.version}")
         return False
     print(f"✅ Python version: {sys.version}")
@@ -41,7 +43,7 @@ def create_env_file():
     print("\n🔧 Creating .env file...")
     env_content = """# OpenAI Configuration
 OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_MODEL=gpt-4-turbo-preview
+OPENAI_MODEL=gpt-4.1-mini
 
 # Milvus Configuration
 MILVUS_HOST=localhost
@@ -49,7 +51,8 @@ MILVUS_PORT=19530
 MILVUS_COLLECTION_NAME=research_documents
 
 # Web Search Configuration
-DUCKDUCKGO_MAX_RESULTS=10
+ENABLE_WEB_SEARCH=True
+MAX_SEARCH_RESULTS=10
 
 # System Configuration
 MAX_TOKENS_PER_CHUNK=1000
@@ -90,7 +93,7 @@ def setup_milvus():
     if not Path(compose_file).exists():
         try:
             import urllib.request
-            url = "https://github.com/milvus-io/milvus/releases/download/v2.4.0/milvus-standalone-docker-compose.yml"
+            url = "https://github.com/milvus-io/milvus/releases/download/v2.5.14/milvus-standalone-docker-compose.yml"
             urllib.request.urlretrieve(url, compose_file)
             print("✅ Downloaded Milvus docker-compose file")
         except Exception as e:
@@ -117,33 +120,6 @@ def create_directories():
         Path(directory).mkdir(exist_ok=True)
         print(f"✅ Created {directory}/ directory")
 
-def test_installation():
-    """Test the installation."""
-    print("\n🧪 Testing installation...")
-    
-    try:
-        # Test imports
-        import config
-        print("✅ Configuration module imported")
-        
-        # Test vector store connection (will fail if Milvus not running, but that's OK)
-        try:
-            from vector_store import vector_store
-            print("✅ Vector store module imported")
-        except Exception as e:
-            print(f"⚠️  Vector store import failed (expected if Milvus not running): {e}")
-        
-        # Test agent imports
-        from agents.supervisor_agent import SupervisorAgent
-        print("✅ Supervisor agent imported")
-        
-        print("✅ Installation test completed")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Installation test failed: {e}")
-        return False
-
 def main():
     """Main setup function."""
     print("=" * 60)
@@ -168,10 +144,6 @@ def main():
     # Setup Milvus (optional)
     setup_milvus()
     
-    # Test installation
-    if not test_installation():
-        print("⚠️  Installation test failed, but setup completed")
-    
     print("\n" + "=" * 60)
     print("🎉 Setup completed!")
     print("=" * 60)
@@ -182,8 +154,9 @@ def main():
     print("3. Run a test:")
     print("   python examples/basic_research.py")
     print("4. Or use the command line interface:")
-    print("   python main.py --topic 'Your Topic' --requirements 'Your requirements'")
+    print("   python -m phd_agent.main --topic 'Your Topic' --requirements 'Your requirements'")
     print("\nFor more information, see README.md")
 
+# Only run main() if this script is executed directly
 if __name__ == "__main__":
     main() 

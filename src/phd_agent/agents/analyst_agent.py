@@ -6,8 +6,8 @@ from langchain.prompts import ChatPromptTemplate
 
 from pydantic import SecretStr
 
-from models import DocumentSource, RelevanceAssessment, AgentState
-from config import config
+from ..models import DocumentSource, RelevanceAssessment, AgentState
+from ..config import config
 
 logger = logging.getLogger(__name__)
 

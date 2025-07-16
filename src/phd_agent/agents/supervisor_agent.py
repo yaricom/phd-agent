@@ -6,12 +6,12 @@ from typing import List, Dict, Any, Optional
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from pydantic import SecretStr
-from models import ResearchTask, AgentState, AgentMessage
-from agents.pdf_agent import PDFAgent
-from agents.web_search_agent import WebSearchAgent
-from agents.analyst_agent import AnalystAgent
-from agents.essay_writer_agent import EssayWriterAgent
-from config import config
+from ..models import ResearchTask, AgentState, AgentMessage
+from .pdf_agent import PDFAgent
+from .web_search_agent import WebSearchAgent
+from .analyst_agent import AnalystAgent
+from .essay_writer_agent import EssayWriterAgent
+from ..config import config
 
 logger = logging.getLogger(__name__)
 

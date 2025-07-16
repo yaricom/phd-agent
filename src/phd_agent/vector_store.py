@@ -6,8 +6,8 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from datetime import datetime
 
-from config import config
-from models import DocumentSource, DocumentType
+from .config import config
+from .models import DocumentSource, DocumentType
 
 logger = logging.getLogger(__name__)
 

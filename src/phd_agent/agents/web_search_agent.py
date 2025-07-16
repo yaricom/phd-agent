@@ -11,9 +11,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
 
-from models import DocumentSource, DocumentType, SearchResult, AgentState
-from vector_store import vector_store
-from config import config
+from ..models import DocumentSource, DocumentType, SearchResult, AgentState
+from ..vector_store import vector_store
+from ..config import config
 
 logger = logging.getLogger(__name__)
 
