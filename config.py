@@ -10,7 +10,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler('phd_agent.log')
+        logging.FileHandler('logs/phd_agent.log')
     ]
 )
 
