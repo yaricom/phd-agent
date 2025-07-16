@@ -54,7 +54,7 @@ A comprehensive multi-agent system for deep research using LangGraph API, featur
 
 ## 📋 Prerequisites
 
-- Python 3.8+
+- Python 3.11+
 - OpenAI API key
 - Milvus vector database (local or cloud)
 - Docker (optional, for Milvus)
