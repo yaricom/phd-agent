@@ -5,6 +5,9 @@ output/
 # the docker data
 docker/
 
+# the logs
+logs/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

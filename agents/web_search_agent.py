@@ -40,7 +40,7 @@ class WebSearchAgent:
     def search_web(self, query: str, max_results: Optional[int] = None) -> List[SearchResult]:
         """Perform web search using DuckDuckGo."""
         if max_results is None:
-            max_results = config.DUCKDUCKGO_MAX_RESULTS
+            max_results = config.MAX_SEARCH_RESULTS
         
         search_results = []
         
