@@ -1,4 +1,5 @@
 import uuid
+import logging
 from typing import List, Dict, Any, Optional
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
@@ -7,6 +8,8 @@ from pydantic import SecretStr
 
 from models import DocumentSource, RelevanceAssessment, AgentState
 from config import config
+
+logger = logging.getLogger(__name__)
 
 class AnalystAgent:
     """Agent responsible for analyzing and assessing the relevance of acquired data."""
@@ -111,7 +114,7 @@ class AnalystAgent:
             return assessment
             
         except Exception as e:
-            print(f"Error assessing document {document.title}: {e}")
+            logger.error(f"Error assessing document {document.title}: {e}")
             # Return default assessment
             return RelevanceAssessment(
                 document_id=document.id,
@@ -155,7 +158,7 @@ class AnalystAgent:
             return quality_data
             
         except Exception as e:
-            print(f"Error assessing quality of document {document.title}: {e}")
+            logger.error(f"Error assessing quality of document {document.title}: {e}")
             return {
                 "credibility_score": 0.5,
                 "information_quality": 0.5,
@@ -176,9 +179,9 @@ class AnalystAgent:
             
             if assessment.relevance_score >= threshold:
                 relevant_documents.append(document)
-                print(f"Document '{document.title}' - Relevance: {assessment.relevance_score:.2f}")
+                logger.info(f"Document '{document.title}' - Relevance: {assessment.relevance_score:.2f}")
             else:
-                print(f"Document '{document.title}' - Relevance: {assessment.relevance_score:.2f} (below threshold)")
+                logger.info(f"Document '{document.title}' - Relevance: {assessment.relevance_score:.2f} (below threshold)")
         
         return relevant_documents, assessments
     
@@ -189,6 +192,8 @@ class AnalystAgent:
         for document in documents:
             quality = self.assess_document_quality(document)
             document_qualities.append((document, quality))
+
+            logger.info(f"Document '{document.title}' - Quality: {quality}")
         
         # Sort by overall quality score (average of credibility, information quality, and currency)
         def quality_score(quality_data):
@@ -235,21 +240,21 @@ class AnalystAgent:
             state.current_step = "analyzing_data"
             
             if not state.documents:
-                print("Analyst Agent: No documents to analyze")
+                logger.info("Analyst Agent: No documents to analyze")
                 state.current_step = "analysis_completed"
                 return state
             
             # Assess relevance of all documents
-            print(f"Analyst Agent: Assessing relevance of {len(state.documents)} documents...")
+            logger.info(f"Analyst Agent: Assessing relevance of {len(state.documents)} documents...")
             relevant_docs, assessments = self.filter_documents_by_relevance(
                 state.documents,
                 state.task.topic,
                 state.task.requirements,
-                threshold=0.5
+                threshold=config.RELEVANCE_THRESHOLD
             )
             
             # Rank documents by quality
-            print(f"Analyst Agent: Ranking {len(relevant_docs)} relevant documents by quality...")
+            logger.info(f"Analyst Agent: Ranking {len(relevant_docs)} relevant documents by quality...")
             ranked_docs = self.rank_documents_by_quality(relevant_docs)
             
             # Update state with filtered and ranked documents
@@ -258,18 +263,18 @@ class AnalystAgent:
             # Generate data summary
             summary = self.generate_data_summary(state.documents, state.task.topic)
             state.analysis_results = {
-                "relevance_assessments": [assess.dict() for assess in assessments],
+                "relevance_assessments": [assess.model_dump() for assess in assessments],
                 "data_summary": summary,
                 "filtered_documents": len(state.documents),
                 "original_documents": len(state.documents) + len([d for d in state.documents if d not in ranked_docs])
             }
             
             state.current_step = "analysis_completed"
-            print(f"Analyst Agent: Analysis completed. {len(state.documents)} high-quality documents selected.")
+            logger.info(f"Analyst Agent: Analysis completed. {len(state.documents)} high-quality documents selected.")
             
         except Exception as e:
             error_msg = f"Analyst Agent error: {str(e)}"
             state.errors.append(error_msg)
-            print(error_msg)
+            logger.error(error_msg)
         
         return state 

@@ -103,12 +103,15 @@ MILVUS_PORT=19530
 MILVUS_COLLECTION_NAME=research_documents
 
 # Web Search Configuration
-DUCKDUCKGO_MAX_RESULTS=10
+ENABLE_WEB_SEARCH=true
+MAX_SEARCH_RESULTS=10
+SEARCH_TIMEOUT=30
 
 # System Configuration
 MAX_TOKENS_PER_CHUNK=1000
 CHUNK_OVERLAP=200
 TEMPERATURE=0.7
+RELEVANCE_THRESHOLD=0.6
 ```
 
 ## 🚀 Usage
@@ -122,7 +125,16 @@ TEMPERATURE=0.7
      --requirements "Analyze current applications and future trends"
    ```
 
-2. **Research with PDF documents**
+2. **Research with PDF documents only (no web search)**
+   ```bash
+   python main.py \
+     --topic "Machine Learning" \
+     --requirements "Review recent advances" \
+     --pdfs papers/ \
+     --no-web-search
+   ```
+
+3. **Research with PDF documents and web search**
    ```bash
    python main.py \
      --topic "Machine Learning" \
@@ -130,7 +142,7 @@ TEMPERATURE=0.7
      --pdfs papers/ research/
    ```
 
-3. **Custom configuration**
+4. **Custom configuration**
    ```bash
    python main.py \
      --topic "Climate Change" \
@@ -156,14 +168,26 @@ TEMPERATURE=0.7
 
 3. **Example API usage**
    ```bash
-   # Start research
+   # Start research with web search enabled
    curl -X POST "http://localhost:8000/research/start" \
      -H "Content-Type: application/json" \
      -d '{
        "topic": "Quantum Computing",
        "requirements": "Current state and applications",
        "max_sources": 10,
-       "essay_length": "medium"
+       "essay_length": "medium",
+       "enable_web_search": true
+     }'
+
+   # Start research with web search disabled
+   curl -X POST "http://localhost:8000/research/start" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "topic": "Quantum Computing",
+       "requirements": "Current state and applications",
+       "max_sources": 10,
+       "essay_length": "medium",
+       "enable_web_search": false
      }'
 
    # Get status
@@ -200,10 +224,40 @@ if state.final_essay:
 ## 📊 Workflow Steps
 
 1. **PDF Processing**: Extracts and chunks PDF documents
-2. **Web Search**: Searches for relevant web content
+2. **Web Search**: Searches for relevant web content (optional, configurable)
 3. **Data Analysis**: Assesses relevance and quality of sources
 4. **Essay Writing**: Generates comprehensive essay from analyzed data
 5. **Output**: Delivers final essay with sources and metadata
+
+## ⚙️ Web Search Configuration
+
+The system supports configurable web search functionality:
+
+### Environment Variable
+```env
+ENABLE_WEB_SEARCH=true  # Set to false to disable web search
+```
+
+### Command Line
+```bash
+python main.py --topic "Your Topic" --no-web-search
+```
+
+### API
+```json
+{
+  "topic": "Your Topic",
+  "requirements": "Your requirements",
+  "enable_web_search": false
+}
+```
+
+### Use Cases for Disabling Web Search
+- **Offline Research**: Work only with local PDF documents
+- **Privacy**: Avoid external web requests
+- **Speed**: Faster processing without web search delays
+- **Cost**: Reduce API usage for web content extraction
+- **Compliance**: Meet data privacy requirements
 
 ## 🔧 Customization
 

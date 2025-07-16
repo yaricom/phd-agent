@@ -1,4 +1,7 @@
 import uuid
+import json
+import logging
+
 from typing import List, Dict, Any, Optional
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
@@ -9,6 +12,9 @@ from agents.web_search_agent import WebSearchAgent
 from agents.analyst_agent import AnalystAgent
 from agents.essay_writer_agent import EssayWriterAgent
 from config import config
+
+logger = logging.getLogger(__name__)
+
 
 class SupervisorAgent:
     """Supervisor agent that orchestrates the entire research workflow."""
@@ -35,6 +41,9 @@ class SupervisorAgent:
         Max Sources: {max_sources}
         Essay Length: {essay_length}
         
+        System Configuration:
+        Web Search Enabled: {web_search_enabled}
+        
         Current State:
         Step: {current_step}
         Documents Collected: {doc_count}
@@ -42,7 +51,7 @@ class SupervisorAgent:
         
         Available Steps:
         1. pdf_processing - Process PDF documents
-        2. web_searching - Search for web content
+        2. web_searching - Search for web content (only if enabled)
         3. analyzing_data - Analyze and filter documents
         4. writing_essay - Write the final essay
         5. completed - Research is complete
@@ -52,6 +61,7 @@ class SupervisorAgent:
         - Whether documents have been analyzed for relevance
         - Whether the essay has been written
         - Any errors that need to be addressed
+        - If web search is disabled, skip web_searching step
         
         Respond with JSON:
         {{
@@ -88,6 +98,7 @@ class SupervisorAgent:
                 requirements=state.task.requirements,
                 max_sources=state.task.max_sources,
                 essay_length=state.task.essay_length,
+                web_search_enabled=config.ENABLE_WEB_SEARCH,
                 current_step=state.current_step,
                 doc_count=len(state.documents),
                 errors="; ".join(state.errors) if state.errors else "None"
@@ -96,10 +107,11 @@ class SupervisorAgent:
             # Get decision from LLM
             response = self.llm.invoke(messages)
             
-            # Parse JSON response
-            import json
+            # Parse JSON response         
             try:
-                decision = json.loads(response.content)
+                # Handle both string and list response formats
+                content = response.content if isinstance(response.content, str) else str(response.content)
+                decision = json.loads(content)
             except json.JSONDecodeError:
                 # Fallback decision logic
                 decision = self._fallback_decision_logic(state)
@@ -107,7 +119,7 @@ class SupervisorAgent:
             return decision
             
         except Exception as e:
-            print(f"Error determining next step: {e}")
+            logger.error(f"Error determining next step: {e}")
             return self._fallback_decision_logic(state)
     
     def _fallback_decision_logic(self, state: AgentState) -> Dict[str, Any]:
@@ -120,12 +132,20 @@ class SupervisorAgent:
                 "recommendations": ["Process any available PDF documents"]
             }
         elif state.current_step == "pdf_completed":
-            return {
-                "next_step": "web_searching",
-                "reasoning": "Moving to web search for additional sources",
-                "should_continue": True,
-                "recommendations": ["Search for relevant web content"]
-            }
+            if config.ENABLE_WEB_SEARCH:
+                return {
+                    "next_step": "web_searching",
+                    "reasoning": "Moving to web search for additional sources",
+                    "should_continue": True,
+                    "recommendations": ["Search for relevant web content"]
+                }
+            else:
+                return {
+                    "next_step": "analyzing_data",
+                    "reasoning": "Web search disabled, moving directly to analysis",
+                    "should_continue": True,
+                    "recommendations": ["Analyze PDF documents only"]
+                }
         elif state.current_step == "web_search_completed":
             return {
                 "next_step": "analyzing_data",
@@ -159,36 +179,40 @@ class SupervisorAgent:
         """Execute a specific step in the workflow."""
         try:
             if step == "pdf_processing":
-                print("Supervisor: Executing PDF processing step...")
+                logger.info("Supervisor: Executing PDF processing step...")
                 state = self.pdf_agent.run(state, pdf_paths)
                 
             elif step == "web_searching":
-                print("Supervisor: Executing web search step...")
-                state = self.web_search_agent.run(state)
+                if config.ENABLE_WEB_SEARCH:
+                    logger.info("Supervisor: Executing web search step...")
+                    state = self.web_search_agent.run(state)
+                else:
+                    logger.info("Supervisor: Web search disabled, skipping web search step...")
+                    state.current_step = "web_search_completed"
                 
             elif step == "analyzing_data":
-                print("Supervisor: Executing data analysis step...")
+                logger.info("Supervisor: Executing data analysis step...")
                 state = self.analyst_agent.run(state)
                 
             elif step == "writing_essay":
-                print("Supervisor: Executing essay writing step...")
+                logger.info("Supervisor: Executing essay writing step...")
                 state = self.essay_writer_agent.run(state)
                 
             else:
-                print(f"Supervisor: Unknown step '{step}'")
+                logger.warning(f"Supervisor: Unknown step '{step}'")
                 state.errors.append(f"Unknown step: {step}")
             
         except Exception as e:
             error_msg = f"Error executing step '{step}': {str(e)}"
             state.errors.append(error_msg)
-            print(error_msg)
+            logger.error(error_msg)
         
         return state
     
     def run_research_workflow(self, topic: str, requirements: str, max_sources: int = 10, 
                             essay_length: str = "medium", pdf_paths: Optional[List[str]] = None) -> AgentState:
         """Run the complete research workflow."""
-        print(f"Supervisor: Starting research workflow for topic: {topic}")
+        logger.info(f"Supervisor: Starting research workflow for topic: {topic}")
         
         # Create task and initialize state
         task = self.create_research_task(topic, requirements, max_sources, essay_length)
@@ -200,17 +224,17 @@ class SupervisorAgent:
         
         while iteration < max_iterations:
             iteration += 1
-            print(f"\nSupervisor: Workflow iteration {iteration}")
-            print(f"Current step: {state.current_step}")
-            print(f"Documents collected: {len(state.documents)}")
+            logger.info(f"Supervisor: Workflow iteration {iteration}")
+            logger.info(f"Current step: {state.current_step}")
+            logger.info(f"Documents collected: {len(state.documents)}")
             
             # Determine next step
             decision = self.determine_next_step(state)
             next_step = decision.get("next_step", "completed")
             should_continue = decision.get("should_continue", False)
             
-            print(f"Next step: {next_step}")
-            print(f"Reasoning: {decision.get('reasoning', 'No reasoning provided')}")
+            logger.info(f"Next step: {next_step}")
+            logger.info(f"Reasoning: {decision.get('reasoning', 'No reasoning provided')}")
             
             # Execute the step
             state = self.execute_step(state, next_step, pdf_paths)
@@ -220,21 +244,21 @@ class SupervisorAgent:
             
             # Check if we should continue
             if not should_continue or next_step == "completed":
-                print("Supervisor: Workflow completed")
+                logger.info("Supervisor: Workflow completed")
                 break
             
             # Check for too many errors
             if len(state.errors) > 5:
-                print("Supervisor: Too many errors, stopping workflow")
+                logger.error("Supervisor: Too many errors, stopping workflow")
                 break
         
         # Final status
         if state.final_essay:
-            print(f"Supervisor: Research completed successfully!")
-            print(f"Essay title: {state.final_essay.title}")
-            print(f"Essay word count: {state.final_essay.word_count}")
+            logger.info(f"Supervisor: Research completed successfully!")
+            logger.info(f"Essay title: {state.final_essay.title}")
+            logger.info(f"Essay word count: {state.final_essay.word_count}")
         else:
-            print("Supervisor: Research workflow did not complete successfully")
+            logger.warning("Supervisor: Research workflow did not complete successfully")
         
         return state
     
@@ -278,7 +302,7 @@ class SupervisorAgent:
             return state
             
         except Exception as e:
-            print(f"Supervisor Agent error: {str(e)}")
+            logger.error(f"Supervisor Agent error: {str(e)}")
             # Return error state
             task = self.create_research_task(topic, requirements, max_sources, essay_length)
             state = self.initialize_state(task)

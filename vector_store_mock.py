@@ -6,11 +6,14 @@ when Milvus is not available.
 """
 
 import uuid
+import logging
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import numpy as np
 
 from models import DocumentSource, DocumentType
+
+logger = logging.getLogger(__name__)
 
 class MockVectorStore:
     """Mock vector database for testing without Milvus."""
@@ -18,7 +21,7 @@ class MockVectorStore:
     def __init__(self):
         self.documents = {}
         self.embeddings = {}
-        print("Mock Vector Store initialized (Milvus not available)")
+        logger.info("Mock Vector Store initialized (Milvus not available)")
     
     def _get_embedding(self, text: str) -> List[float]:
         """Generate mock embedding for text."""
@@ -43,7 +46,7 @@ class MockVectorStore:
         self.documents[document.id] = document
         self.embeddings[document.id] = embedding
         
-        print(f"Mock: Added document: {document.title}")
+        logger.info(f"Mock: Added document: {document.title}")
         return document.id
     
     def search_similar(self, query: str, top_k: int = 5, filter_dict: Optional[Dict] = None) -> List[DocumentSource]:

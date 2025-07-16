@@ -9,11 +9,14 @@ It provides a command-line interface for running research workflows.
 import argparse
 import json
 import sys
+import logging
 from pathlib import Path
 from typing import List, Optional
 
 from agents.supervisor_agent import SupervisorAgent
 from config import config
+
+logger = logging.getLogger(__name__)
 
 def main():
     """Main application entry point."""
@@ -25,7 +28,10 @@ Examples:
   # Basic research without PDFs
   python main.py --topic "Artificial Intelligence in Healthcare" --requirements "Analyze current applications and future trends"
   
-  # Research with PDF documents
+  # Research with PDF documents only (no web search)
+  python main.py --topic "Machine Learning" --requirements "Review recent advances" --pdfs papers/ --no-web-search
+  
+  # Research with PDF documents and web search
   python main.py --topic "Machine Learning" --requirements "Review recent advances" --pdfs papers/ research/
   
   # Custom configuration
@@ -82,7 +88,18 @@ Examples:
         help="Enable verbose output"
     )
     
+    parser.add_argument(
+        "--no-web-search",
+        action="store_true",
+        help="Disable web search (use only PDF documents)"
+    )
+    
     args = parser.parse_args()
+    
+    # Apply command line overrides to configuration
+    if args.no_web_search:
+        config.ENABLE_WEB_SEARCH = False
+        logger.info("Web search disabled via command line argument")
     
     # Validate PDF paths if provided
     pdf_paths = []
@@ -90,31 +107,33 @@ Examples:
         for path in args.pdfs:
             path_obj = Path(path)
             if not path_obj.exists():
-                print(f"Warning: Path does not exist: {path}")
+                logger.warning(f"Path does not exist: {path}")
                 continue
             pdf_paths.append(str(path_obj.absolute()))
     
     try:
         # Initialize supervisor agent
-        print("Initializing Multi-Agent Research System...")
+        logger.info("Initializing Multi-Agent Research System...")
         supervisor = SupervisorAgent()
         
         if args.status_only:
             # Just show system status
-            print("System Status:")
-            print(f"- OpenAI API Key: {'Configured' if config.OPENAI_API_KEY else 'Missing'}")
-            print(f"- Milvus Host: {config.MILVUS_HOST}:{config.MILVUS_PORT}")
-            print(f"- Model: {config.OPENAI_MODEL}")
+            logger.info("System Status:")
+            logger.info(f"- OpenAI API Key: {'Configured' if config.OPENAI_API_KEY else 'Missing'}")
+            logger.info(f"- Milvus Host: {config.MILVUS_HOST}:{config.MILVUS_PORT}")
+            logger.info(f"- Model: {config.OPENAI_MODEL}")
+            logger.info(f"- Web Search: {'Enabled' if config.ENABLE_WEB_SEARCH else 'Disabled'}")
             return
         
         # Run the research workflow
-        print(f"\nStarting research on: {args.topic}")
-        print(f"Requirements: {args.requirements}")
-        print(f"Max sources: {args.max_sources}")
-        print(f"Essay length: {args.essay_length}")
+        logger.info(f"Starting research on: {args.topic}")
+        logger.info(f"Requirements: {args.requirements}")
+        logger.info(f"Max sources: {args.max_sources}")
+        logger.info(f"Essay length: {args.essay_length}")
+        logger.info(f"Web search: {'Enabled' if config.ENABLE_WEB_SEARCH else 'Disabled'}")
         if pdf_paths:
-            print(f"PDF paths: {pdf_paths}")
-        print("-" * 50)
+            logger.info(f"PDF paths: {pdf_paths}")
+        logger.info("-" * 50)
         
         state = supervisor.run(
             topic=args.topic,
@@ -125,28 +144,28 @@ Examples:
         )
         
         # Display results
-        print("\n" + "=" * 50)
-        print("RESEARCH RESULTS")
-        print("=" * 50)
+        logger.info("\n" + "=" * 50)
+        logger.info("RESEARCH RESULTS")
+        logger.info("=" * 50)
         
         # Show workflow status
         status = supervisor.get_workflow_status(state)
-        print(f"Task: {status['task']['topic']}")
-        print(f"Current Step: {status['current_step']}")
-        print(f"Documents Collected: {status['documents_collected']}")
-        print(f"Search Results: {status['search_results']}")
-        print(f"Has Essay: {status['has_essay']}")
+        logger.info(f"Task: {status['task']['topic']}")
+        logger.info(f"Current Step: {status['current_step']}")
+        logger.info(f"Documents Collected: {status['documents_collected']}")
+        logger.info(f"Search Results: {status['search_results']}")
+        logger.info(f"Has Essay: {status['has_essay']}")
         
         if status['errors']:
-            print(f"\nErrors encountered: {len(status['errors'])}")
+            logger.error(f"Errors encountered: {len(status['errors'])}")
             for error in status['errors']:
-                print(f"  - {error}")
+                logger.error(f"  - {error}")
         
         # Show essay if available
         if state.final_essay:
-            print(f"\nEssay Title: {state.final_essay.title}")
-            print(f"Word Count: {state.final_essay.word_count}")
-            print(f"Sources Used: {len(state.final_essay.sources)}")
+            logger.info(f"Essay Title: {state.final_essay.title}")
+            logger.info(f"Word Count: {state.final_essay.word_count}")
+            logger.info(f"Sources Used: {len(state.final_essay.sources)}")
             
             # Save essay to file
             output_file = args.output or "essay_output.txt"
@@ -164,31 +183,31 @@ Examples:
                         f.write(f"   URL: {source.url}\n")
                     f.write("\n")
             
-            print(f"\nEssay saved to: {output_file}")
+            logger.info(f"Essay saved to: {output_file}")
             
             # Show essay content if verbose
             if args.verbose:
-                print("\n" + "=" * 50)
-                print("ESSAY CONTENT")
-                print("=" * 50)
-                print(state.final_essay.content)
+                logger.info("\n" + "=" * 50)
+                logger.info("ESSAY CONTENT")
+                logger.info("=" * 50)
+                logger.info(state.final_essay.content)
         
         # Show analysis results if available
         if state.analysis_results:
-            print(f"\nAnalysis Results:")
+            logger.info(f"Analysis Results:")
             if 'data_summary' in state.analysis_results:
                 summary = state.analysis_results['data_summary']
-                print(f"  - Total documents: {summary.get('total_documents', 0)}")
-                print(f"  - Source distribution: {summary.get('source_distribution', {})}")
-                print(f"  - Data coverage: {summary.get('data_coverage', 'unknown')}")
+                logger.info(f"  - Total documents: {summary.get('total_documents', 0)}")
+                logger.info(f"  - Source distribution: {summary.get('source_distribution', {})}")
+                logger.info(f"  - Data coverage: {summary.get('data_coverage', 'unknown')}")
         
-        print("\nResearch workflow completed!")
+        logger.info("Research workflow completed!")
         
     except KeyboardInterrupt:
-        print("\nResearch interrupted by user.")
+        logger.info("Research interrupted by user.")
         sys.exit(1)
     except Exception as e:
-        print(f"\nError: {e}")
+        logger.error(f"Error: {e}")
         if args.verbose:
             import traceback
             traceback.print_exc()

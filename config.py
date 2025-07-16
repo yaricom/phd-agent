@@ -1,39 +1,61 @@
 import os
 from typing import Optional
-from dotenv import load_dotenv
+from pydantic import BaseSettings, validator
+import logging
 
-# Load environment variables
-load_dotenv()
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('phd_agent.log')
+    ]
+)
 
-class Config:
-    """Configuration class for the multi-agent system."""
+logger = logging.getLogger(__name__)
+
+class Config(BaseSettings):
+    """Configuration settings for the PhD Agent system."""
     
     # OpenAI Configuration
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4-turbo-preview")
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-3.5-turbo"
+    TEMPERATURE: float = 0.7
     
     # Milvus Configuration
-    MILVUS_HOST: str = os.getenv("MILVUS_HOST", "localhost")
-    MILVUS_PORT: int = int(os.getenv("MILVUS_PORT", "19530"))
-    MILVUS_COLLECTION_NAME: str = os.getenv("MILVUS_COLLECTION_NAME", "research_documents")
+    MILVUS_HOST: str = "localhost"
+    MILVUS_PORT: int = 19530
+    MILVUS_COLLECTION_NAME: str = "research_documents"
+    
+    # Text Processing Configuration
+    MAX_TOKENS_PER_CHUNK: int = 1000
+    CHUNK_OVERLAP: int = 200
+    
+    # Analysis Configuration
+    RELEVANCE_THRESHOLD: float = 0.6
     
     # Web Search Configuration
-    DUCKDUCKGO_MAX_RESULTS: int = int(os.getenv("DUCKDUCKGO_MAX_RESULTS", "10"))
+    ENABLE_WEB_SEARCH: bool = True
+    MAX_SEARCH_RESULTS: int = 10
+    SEARCH_TIMEOUT: int = 30
     
-    # System Configuration
-    MAX_TOKENS_PER_CHUNK: int = int(os.getenv("MAX_TOKENS_PER_CHUNK", "1000"))
-    CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "200"))
-    TEMPERATURE: float = float(os.getenv("TEMPERATURE", "0.7"))
+    class Config:
+        env_file = ".env"
     
-    # Vector Database Configuration
-    VECTOR_DIMENSION: int = 1536  # OpenAI embedding dimension
-    METRIC_TYPE: str = "COSINE"
+    @validator('OPENAI_API_KEY')
+    def validate_openai_key(cls, v):
+        if not v:
+            logger.warning("OpenAI API key not set")
+        return v
     
-    @classmethod
-    def validate(cls) -> bool:
-        """Validate that all required configuration is present."""
-        if not cls.OPENAI_API_KEY:
-            raise ValueError("OPENAI_API_KEY is required")
+    def validate(self):
+        """Validate configuration settings."""
+        if not self.OPENAI_API_KEY:
+            logger.error("OpenAI API key is required")
+            raise ValueError("OpenAI API key is required")
+        
+        logger.info("Configuration validated successfully")
         return True
 
 # Global config instance

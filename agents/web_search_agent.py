@@ -1,11 +1,12 @@
 import requests
 import uuid
+import logging
 from typing import List, Dict, Any, Optional
 from urllib.parse import urlparse
 import time
 
 from bs4 import BeautifulSoup
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
@@ -13,6 +14,8 @@ from pydantic import SecretStr
 from models import DocumentSource, DocumentType, SearchResult, AgentState
 from vector_store import vector_store
 from config import config
+
+logger = logging.getLogger(__name__)
 
 class WebSearchAgent:
     """Agent responsible for performing web searches and extracting content from web pages."""
@@ -54,10 +57,10 @@ class WebSearchAgent:
                     )
                     search_results.append(search_result)
                 
-                print(f"Web Search: Found {len(search_results)} results for query: {query}")
+                logger.info(f"Web Search: Found {len(search_results)} results for query: {query}")
                 
         except Exception as e:
-            print(f"Error performing web search: {e}")
+            logger.error(f"Error performing web search: {e}")
         
         return search_results
     
@@ -92,7 +95,7 @@ class WebSearchAgent:
             return text if text else None
             
         except Exception as e:
-            print(f"Error extracting content from {url}: {e}")
+            logger.error(f"Error extracting content from {url}: {e}")
             return None
     
     def process_search_results(self, search_results: List[SearchResult], extract_content: bool = True) -> List[DocumentSource]:
@@ -134,7 +137,7 @@ class WebSearchAgent:
                         documents.append(doc_source)
                 
             except Exception as e:
-                print(f"Error processing search result {result.title}: {e}")
+                logger.error(f"Error processing search result {result.title}: {e}")
                 continue
         
         return documents
@@ -148,10 +151,10 @@ class WebSearchAgent:
                 doc_id = vector_store.add_document(document)
                 stored_ids.append(doc_id)
             except Exception as e:
-                print(f"Error storing web document {document.title}: {e}")
+                logger.error(f"Error storing web document {document.title}: {e}")
                 continue
         
-        print(f"Stored {len(stored_ids)} web documents in vector database")
+        logger.info(f"Stored {len(stored_ids)} web documents in vector database")
         return stored_ids
     
     def search_relevant_web_content(self, topic: str, requirements: str, max_results: Optional[int] = None) -> List[DocumentSource]:
@@ -183,7 +186,7 @@ class WebSearchAgent:
                 time.sleep(2)
                 
             except Exception as e:
-                print(f"Error searching for query '{query}': {e}")
+                logger.error(f"Error searching for query '{query}': {e}")
                 continue
         
         return all_documents
@@ -215,11 +218,11 @@ class WebSearchAgent:
                     state.search_results.append(search_result)
             
             state.current_step = "web_search_completed"
-            print(f"Web Search Agent: Found and processed {len(web_documents)} web documents")
+            logger.info(f"Web Search Agent: Found and processed {len(web_documents)} web documents")
             
         except Exception as e:
             error_msg = f"Web Search Agent error: {str(e)}"
             state.errors.append(error_msg)
-            print(error_msg)
+            logger.error(error_msg)
         
         return state 

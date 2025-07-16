@@ -8,20 +8,23 @@ for a simple research task without PDF documents.
 
 import sys
 import os
+import logging
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agents.supervisor_agent import SupervisorAgent
 from config import config
 
+logger = logging.getLogger(__name__)
+
 def main():
     """Run a basic research example."""
     
-    print("=" * 60)
-    print("PhD Agent - Basic Research Example")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("PhD Agent - Basic Research Example")
+    logger.info("=" * 60)
     
     # Initialize the supervisor agent
-    print("Initializing supervisor agent...")
+    logger.info("Initializing supervisor agent...")
     supervisor = SupervisorAgent()
     
     # Define research parameters
@@ -35,13 +38,13 @@ def main():
     5. Future trends and opportunities
     """
     
-    print(f"\nResearch Topic: {topic}")
-    print(f"Requirements: {requirements.strip()}")
-    print("-" * 60)
+    logger.info(f"\nResearch Topic: {topic}")
+    logger.info(f"Requirements: {requirements.strip()}")
+    logger.info("-" * 60)
     
     try:
         # Run the research workflow
-        print("Starting research workflow...")
+        logger.info("Starting research workflow...")
         state = supervisor.run(
             topic=topic,
             requirements=requirements,
@@ -50,28 +53,28 @@ def main():
         )
         
         # Display results
-        print("\n" + "=" * 60)
-        print("RESEARCH RESULTS")
-        print("=" * 60)
+        logger.info("\n" + "=" * 60)
+        logger.info("RESEARCH RESULTS")
+        logger.info("=" * 60)
         
         # Show workflow status
         status = supervisor.get_workflow_status(state)
-        print(f"Task: {status['task']['topic']}")
-        print(f"Current Step: {status['current_step']}")
-        print(f"Documents Collected: {status['documents_collected']}")
-        print(f"Search Results: {status['search_results']}")
-        print(f"Has Essay: {status['has_essay']}")
+        logger.info(f"Task: {status['task']['topic']}")
+        logger.info(f"Current Step: {status['current_step']}")
+        logger.info(f"Documents Collected: {status['documents_collected']}")
+        logger.info(f"Search Results: {status['search_results']}")
+        logger.info(f"Has Essay: {status['has_essay']}")
         
         if status['errors']:
-            print(f"\nErrors encountered: {len(status['errors'])}")
+            logger.error(f"Errors encountered: {len(status['errors'])}")
             for error in status['errors']:
-                print(f"  - {error}")
+                logger.error(f"  - {error}")
         
         # Show essay if available
         if state.final_essay:
-            print(f"\nEssay Title: {state.final_essay.title}")
-            print(f"Word Count: {state.final_essay.word_count}")
-            print(f"Sources Used: {len(state.final_essay.sources)}")
+            logger.info(f"Essay Title: {state.final_essay.title}")
+            logger.info(f"Word Count: {state.final_essay.word_count}")
+            logger.info(f"Sources Used: {len(state.final_essay.sources)}")
             
             # Save essay to file
             output_file = "ai_education_essay.txt"
@@ -89,27 +92,27 @@ def main():
                         f.write(f"   URL: {source.url}\n")
                     f.write("\n")
             
-            print(f"\nEssay saved to: {output_file}")
+            logger.info(f"Essay saved to: {output_file}")
             
             # Show essay content
-            print("\n" + "=" * 60)
-            print("ESSAY CONTENT")
-            print("=" * 60)
-            print(state.final_essay.content)
+            logger.info("\n" + "=" * 60)
+            logger.info("ESSAY CONTENT")
+            logger.info("=" * 60)
+            logger.info(state.final_essay.content)
         
         # Show analysis results if available
         if state.analysis_results:
-            print(f"\nAnalysis Results:")
+            logger.info(f"Analysis Results:")
             if 'data_summary' in state.analysis_results:
                 summary = state.analysis_results['data_summary']
-                print(f"  - Total documents: {summary.get('total_documents', 0)}")
-                print(f"  - Source distribution: {summary.get('source_distribution', {})}")
-                print(f"  - Data coverage: {summary.get('data_coverage', 'unknown')}")
+                logger.info(f"  - Total documents: {summary.get('total_documents', 0)}")
+                logger.info(f"  - Source distribution: {summary.get('source_distribution', {})}")
+                logger.info(f"  - Data coverage: {summary.get('data_coverage', 'unknown')}")
         
-        print("\nResearch workflow completed successfully!")
+        logger.info("Research workflow completed successfully!")
         
     except Exception as e:
-        print(f"\nError during research: {e}")
+        logger.error(f"Error during research: {e}")
         import traceback
         traceback.print_exc()
 

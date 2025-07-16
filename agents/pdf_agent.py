@@ -1,6 +1,7 @@
 import os
 import fitz  # PyMuPDF
 import uuid
+import logging
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 import re
@@ -11,6 +12,8 @@ from pydantic import SecretStr
 from models import DocumentSource, DocumentType, AgentState
 from vector_store import vector_store
 from config import config
+
+logger = logging.getLogger(__name__)
 
 class PDFAgent:
     """Agent responsible for processing PDF documents and storing them in the vector database."""
@@ -43,11 +46,11 @@ class PDFAgent:
             full_text = ""
             for page_num in range(len(doc)):
                 page = doc.load_page(page_num)
-                text = page.get_text()
+                text = page.get_text()  # type: ignore
                 full_text += f"\n--- Page {page_num + 1} ---\n{text}"
             
             # Extract metadata
-            metadata = doc.metadata
+            metadata = doc.metadata or {}
             title = metadata.get('title', Path(file_path).stem)
             
             # Split text into chunks
@@ -73,10 +76,10 @@ class PDFAgent:
                     documents.append(doc_source)
             
             doc.close()
-            print(f"Processed PDF: {file_path} -> {len(documents)} chunks")
+            logger.info(f"Processed PDF: {file_path} -> {len(documents)} chunks")
             
         except Exception as e:
-            print(f"Error processing PDF {file_path}: {e}")
+            logger.error(f"Error processing PDF {file_path}: {e}")
             raise
         
         return documents
@@ -91,7 +94,7 @@ class PDFAgent:
                 documents = self.process_pdf_file(str(pdf_file))
                 all_documents.extend(documents)
             except Exception as e:
-                print(f"Error processing {pdf_file}: {e}")
+                logger.error(f"Error processing {pdf_file}: {e}")
                 continue
         
         return all_documents
@@ -105,10 +108,10 @@ class PDFAgent:
                 doc_id = vector_store.add_document(document)
                 stored_ids.append(doc_id)
             except Exception as e:
-                print(f"Error storing document {document.title}: {e}")
+                logger.error(f"Error storing document {document.title}: {e}")
                 continue
         
-        print(f"Stored {len(stored_ids)} documents in vector database")
+        logger.info(f"Stored {len(stored_ids)} documents in vector database")
         return stored_ids
     
     def search_local_documents(self, query: str, top_k: int = 5) -> List[DocumentSource]:
@@ -117,7 +120,7 @@ class PDFAgent:
             documents = vector_store.search_similar(query, top_k=top_k)
             return documents
         except Exception as e:
-            print(f"Error searching local documents: {e}")
+            logger.error(f"Error searching local documents: {e}")
             return []
     
     def get_document_statistics(self) -> Dict[str, Any]:
@@ -126,7 +129,7 @@ class PDFAgent:
             stats = vector_store.get_collection_stats()
             return stats
         except Exception as e:
-            print(f"Error getting document statistics: {e}")
+            logger.error(f"Error getting document statistics: {e}")
             return {"error": str(e)}
     
     def run(self, state: AgentState, pdf_paths: Optional[List[str]] = None) -> AgentState:
@@ -149,7 +152,7 @@ class PDFAgent:
                 if new_documents:
                     stored_ids = self.store_documents(new_documents)
                     state.documents.extend(new_documents)
-                    print(f"PDF Agent: Processed and stored {len(new_documents)} new documents")
+                    logger.info(f"PDF Agent: Processed and stored {len(new_documents)} new documents")
             
             # Search for relevant documents based on the task
             relevant_docs = self.search_local_documents(
@@ -163,11 +166,11 @@ class PDFAgent:
                     state.documents.append(doc)
             
             state.current_step = "pdf_completed"
-            print(f"PDF Agent: Found {len(relevant_docs)} relevant documents from local storage")
+            logger.info(f"PDF Agent: Found {len(relevant_docs)} relevant documents from local storage")
             
         except Exception as e:
             error_msg = f"PDF Agent error: {str(e)}"
             state.errors.append(error_msg)
-            print(error_msg)
+            logger.error(error_msg)
         
         return state 

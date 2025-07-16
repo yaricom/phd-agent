@@ -1,4 +1,5 @@
 import uuid
+import logging
 from typing import List, Optional, Dict, Any
 from pymilvus import connections, Collection, CollectionSchema, FieldSchema, DataType, utility
 from sentence_transformers import SentenceTransformer
@@ -7,6 +8,8 @@ from datetime import datetime
 
 from config import config
 from models import DocumentSource, DocumentType
+
+logger = logging.getLogger(__name__)
 
 class MilvusVectorStore:
     """Vector database service using Milvus for document storage and retrieval."""
@@ -27,16 +30,16 @@ class MilvusVectorStore:
                 host=config.MILVUS_HOST,
                 port=config.MILVUS_PORT
             )
-            print(f"Connected to Milvus at {config.MILVUS_HOST}:{config.MILVUS_PORT}")
+            logger.info(f"Connected to Milvus at {config.MILVUS_HOST}:{config.MILVUS_PORT}")
         except Exception as e:
-            print(f"Failed to connect to Milvus: {e}")
+            logger.error(f"Failed to connect to Milvus: {e}")
             raise
     
     def _setup_collection(self):
         """Setup the collection schema and create if it doesn't exist."""
         if utility.has_collection(self.collection_name):
             self.collection = Collection(self.collection_name)
-            print(f"Using existing collection: {self.collection_name}")
+            logger.info(f"Using existing collection: {self.collection_name}")
         else:
             # Define schema
             fields = [
@@ -61,7 +64,7 @@ class MilvusVectorStore:
                 "params": {"nlist": 1024}
             }
             self.collection.create_index("embedding", index_params)
-            print(f"Created new collection: {self.collection_name}")
+            logger.info(f"Created new collection: {self.collection_name}")
     
     def _get_embedding(self, text: str) -> List[float]:
         """Generate embedding for text."""
@@ -97,7 +100,7 @@ class MilvusVectorStore:
         self.collection.insert(data)
         self.collection.flush()
         
-        print(f"Added document: {document.title}")
+        logger.info(f"Added document: {document.title}")
         return document.id
     
     def search_similar(self, query: str, top_k: int = 5, filter_dict: Optional[Dict] = None) -> List[DocumentSource]:
@@ -130,19 +133,18 @@ class MilvusVectorStore:
         
         # Convert results to DocumentSource objects
         documents = []
-        for hits in results:
-            for hit in hits:
-                doc = DocumentSource(
-                    id=hit.entity.get("id"),
-                    title=hit.entity.get("title"),
-                    content=hit.entity.get("content"),
-                    source_type=DocumentType(hit.entity.get("source_type")),
-                    url=hit.entity.get("url") if hit.entity.get("url") else None,
-                    file_path=hit.entity.get("file_path") if hit.entity.get("file_path") else None,
-                    metadata=eval(hit.entity.get("metadata")) if hit.entity.get("metadata") else {},
-                    created_at=datetime.fromisoformat(hit.entity.get("created_at"))
-                )
-                documents.append(doc)
+        for hit in results:  # type: ignore
+            doc = DocumentSource(
+                id=hit.entity.get("id"),
+                title=hit.entity.get("title"),
+                content=hit.entity.get("content"),
+                source_type=DocumentType(hit.entity.get("source_type")),
+                url=hit.entity.get("url") if hit.entity.get("url") else None,
+                file_path=hit.entity.get("file_path") if hit.entity.get("file_path") else None,
+                metadata=eval(hit.entity.get("metadata")) if hit.entity.get("metadata") else {},
+                created_at=datetime.fromisoformat(hit.entity.get("created_at"))
+            )
+            documents.append(doc)
         
         return documents
     
@@ -184,7 +186,7 @@ class MilvusVectorStore:
             self.collection.delete(f'id == "{doc_id}"')
             return True
         except Exception as e:
-            print(f"Error deleting document {doc_id}: {e}")
+            logger.error(f"Error deleting document {doc_id}: {e}")
             return False
     
     def get_collection_stats(self) -> Dict[str, Any]:
@@ -207,6 +209,6 @@ class MilvusVectorStore:
 try:
     vector_store = MilvusVectorStore()
 except Exception as e:
-    print(f"Warning: Milvus not available ({e}), using mock vector store")
+    logger.warning(f"Milvus not available ({e}), using mock vector store")
     from vector_store_mock import mock_vector_store
     vector_store = mock_vector_store 

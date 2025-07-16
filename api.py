@@ -38,6 +38,7 @@ class ResearchRequest(BaseModel):
     requirements: str
     max_sources: int = 10
     essay_length: str = "medium"
+    enable_web_search: bool = True
 
 class ResearchResponse(BaseModel):
     """Response model for research task status."""
@@ -79,6 +80,10 @@ async def start_research(request: ResearchRequest):
         # Create task ID
         task_id = str(uuid.uuid4())
         
+        # Apply web search configuration
+        if not request.enable_web_search:
+            config.ENABLE_WEB_SEARCH = False
+        
         # Create research task
         task = supervisor.create_research_task(
             topic=request.topic,
@@ -101,7 +106,8 @@ async def start_research(request: ResearchRequest):
                 "topic": request.topic,
                 "requirements": request.requirements,
                 "max_sources": request.max_sources,
-                "essay_length": request.essay_length
+                "essay_length": request.essay_length,
+                "enable_web_search": request.enable_web_search
             }
         )
     
@@ -315,7 +321,8 @@ async def health_check():
         "status": "healthy",
         "openai_configured": bool(config.OPENAI_API_KEY),
         "milvus_host": f"{config.MILVUS_HOST}:{config.MILVUS_PORT}",
-        "model": config.OPENAI_MODEL
+        "model": config.OPENAI_MODEL,
+        "web_search_enabled": config.ENABLE_WEB_SEARCH
     }
 
 if __name__ == "__main__":

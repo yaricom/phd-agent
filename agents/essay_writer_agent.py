@@ -1,11 +1,14 @@
 import uuid
 import re
+import logging
 from typing import List, Dict, Any, Optional
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from pydantic import SecretStr
 from models import DocumentSource, EssayOutline, Essay, AgentState
 from config import config
+
+logger = logging.getLogger(__name__)
 
 class EssayWriterAgent:
     """Agent responsible for writing essays using collected research data."""
@@ -101,7 +104,9 @@ class EssayWriterAgent:
             # Parse JSON response
             import json
             try:
-                outline_data = json.loads(response.content)
+                # Handle both string and list response formats
+                content = response.content if isinstance(response.content, str) else str(response.content)
+                outline_data = json.loads(content)
             except json.JSONDecodeError:
                 # Fallback outline if JSON parsing fails
                 outline_data = {
@@ -128,7 +133,7 @@ class EssayWriterAgent:
             return outline
             
         except Exception as e:
-            print(f"Error creating essay outline: {e}")
+            logger.error(f"Error creating essay outline: {e}")
             # Return basic outline
             return EssayOutline(
                 title=f"Research on {state.task.topic}",
@@ -181,7 +186,8 @@ class EssayWriterAgent:
             
             # Get essay from LLM
             response = self.llm.invoke(messages)
-            essay_content = response.content
+            # Handle both string and list response formats
+            essay_content = response.content if isinstance(response.content, str) else str(response.content)
             
             # Calculate word count
             word_count = len(essay_content.split())
@@ -199,7 +205,7 @@ class EssayWriterAgent:
             return essay
             
         except Exception as e:
-            print(f"Error writing essay: {e}")
+            logger.error(f"Error writing essay: {e}")
             # Return basic essay
             basic_content = f"""
             {outline.title}
@@ -253,17 +259,17 @@ class EssayWriterAgent:
             state.current_step = "writing_essay"
             
             if not state.documents:
-                print("Essay Writer Agent: No documents available for essay writing")
+                logger.info("Essay Writer Agent: No documents available for essay writing")
                 state.current_step = "essay_completed"
                 return state
             
             # Create essay outline
-            print("Essay Writer Agent: Creating essay outline...")
+            logger.info("Essay Writer Agent: Creating essay outline...")
             outline = self.create_essay_outline(state)
             state.essay_outline = outline
             
             # Write the essay
-            print("Essay Writer Agent: Writing essay...")
+            logger.info("Essay Writer Agent: Writing essay...")
             essay = self.write_essay(state, outline)
             state.final_essay = essay
             
@@ -271,12 +277,12 @@ class EssayWriterAgent:
             validation = self.validate_essay_requirements(essay, state.task.requirements)
             
             state.current_step = "essay_completed"
-            print(f"Essay Writer Agent: Essay completed. Word count: {essay.word_count}")
-            print(f"Essay Writer Agent: Validation - {validation}")
+            logger.info(f"Essay Writer Agent: Essay completed. Word count: {essay.word_count}")
+            logger.info(f"Essay Writer Agent: Validation - {validation}")
             
         except Exception as e:
             error_msg = f"Essay Writer Agent error: {str(e)}"
             state.errors.append(error_msg)
-            print(error_msg)
+            logger.error(error_msg)
         
         return state 
