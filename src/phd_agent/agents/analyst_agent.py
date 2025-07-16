@@ -6,7 +6,7 @@ from langchain.prompts import ChatPromptTemplate
 
 from pydantic import SecretStr
 
-from ..models import DocumentSource, RelevanceAssessment, AgentState
+from ..models import DocumentSource, RelevanceAssessment, AgentState, AnalysisResults, CollectedDataSummary
 from ..config import config
 
 logger = logging.getLogger(__name__)
@@ -205,10 +205,17 @@ class AnalystAgent:
         
         return [doc for doc, _ in sorted_documents]
     
-    def generate_data_summary(self, documents: List[DocumentSource], topic: str) -> Dict[str, Any]:
+    def generate_data_summary(self, documents: List[DocumentSource], topic: str) -> CollectedDataSummary:
         """Generate a summary of the collected data."""
         if not documents:
-            return {"error": "No documents to summarize"}
+            return CollectedDataSummary(
+                total_documents=0,
+                source_distribution={},
+                average_content_length=0.0,
+                total_content_length=0,
+                research_topic=topic,
+                data_coverage="none"
+            )
         
         # Count documents by source type
         source_counts = {}
@@ -220,19 +227,22 @@ class AnalystAgent:
         total_length = sum(len(doc.content) for doc in documents)
         avg_length = total_length / len(documents) if documents else 0
         
-        # Identify key themes (simplified)
-        all_content = " ".join([doc.content[:1000] for doc in documents])  # Limit for analysis
+        # Determine data coverage
+        if len(documents) >= 10:
+            coverage = "comprehensive"
+        elif len(documents) >= 5:
+            coverage = "moderate"
+        else:
+            coverage = "limited"
         
-        summary = {
-            "total_documents": len(documents),
-            "source_distribution": source_counts,
-            "average_content_length": avg_length,
-            "total_content_length": total_length,
-            "research_topic": topic,
-            "data_coverage": "comprehensive" if len(documents) >= 10 else "moderate" if len(documents) >= 5 else "limited"
-        }
-        
-        return summary
+        return CollectedDataSummary(
+            total_documents=len(documents),
+            source_distribution=source_counts,
+            average_content_length=avg_length,
+            total_content_length=total_length,
+            research_topic=topic,
+            data_coverage=coverage
+        )
     
     def run(self, state: AgentState) -> AgentState:
         """Main execution method for the analyst agent."""
@@ -262,12 +272,12 @@ class AnalystAgent:
             
             # Generate data summary
             summary = self.generate_data_summary(state.documents, state.task.topic)
-            state.analysis_results = {
-                "relevance_assessments": [assess.model_dump() for assess in assessments],
-                "data_summary": summary,
-                "filtered_documents": len(state.documents),
-                "original_documents": len(state.documents) + len([d for d in state.documents if d not in ranked_docs])
-            }
+            state.analysis_results = AnalysisResults(
+                data_summary=summary,
+                relevance_assessments=assessments,
+                filtered_documents=[doc.id for doc in state.documents],
+                quality_metrics={"total_assessed": len(assessments), "relevant_found": len(state.documents)}
+            )
             
             state.current_step = "analysis_completed"
             logger.info(f"Analyst Agent: Analysis completed. {len(state.documents)} high-quality documents selected.")

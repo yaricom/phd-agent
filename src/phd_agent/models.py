@@ -55,6 +55,32 @@ class Essay(BaseModel):
     word_count: int
     created_at: datetime = Field(default_factory=datetime.now)
 
+class RelevanceAssessment(BaseModel):
+    """Assessment of document relevance."""
+    document_id: str
+    relevance_score: float  # 0.0 to 1.0
+    reasoning: str
+    key_points: List[str]
+    confidence: float  # 0.0 to 1.0
+
+class CollectedDataSummary(BaseModel):
+    """Summary of collected research data."""
+    total_documents: int
+    source_distribution: Dict[str, int]
+    average_content_length: float
+    total_content_length: int
+    research_topic: str
+    data_coverage: str
+
+class AnalysisResults(BaseModel):
+    """Results from data analysis and document assessment."""
+    data_summary: Optional[CollectedDataSummary] = None
+    relevance_assessments: List[RelevanceAssessment] = Field(default_factory=list)
+    filtered_documents: List[str] = Field(default_factory=list)  # Document IDs
+    quality_metrics: Dict[str, float] = Field(default_factory=dict)
+    coverage_score: Optional[float] = None
+    confidence_score: Optional[float] = None
+
 class AgentState(BaseModel):
     """State shared between all agents."""
     task: ResearchTask
@@ -62,7 +88,7 @@ class AgentState(BaseModel):
     search_results: List[SearchResult] = Field(default_factory=list)
     essay_outline: Optional[EssayOutline] = None
     final_essay: Optional[Essay] = None
-    analysis_results: Dict[str, Any] = Field(default_factory=dict)
+    analysis_results: AnalysisResults = Field(default_factory=AnalysisResults)
     current_step: str = "initialized"
     errors: List[str] = Field(default_factory=list)
     
@@ -73,14 +99,6 @@ class AgentMessage(BaseModel):
     content: Any
     message_type: Literal["task", "data", "result", "error", "control"]
     timestamp: datetime = Field(default_factory=datetime.now)
-
-class RelevanceAssessment(BaseModel):
-    """Assessment of document relevance."""
-    document_id: str
-    relevance_score: float  # 0.0 to 1.0
-    reasoning: str
-    key_points: List[str]
-    confidence: float  # 0.0 to 1.0
 
 class TaskDetails(BaseModel):
     """Details of a research task."""
@@ -104,5 +122,5 @@ class WorkflowStatus(BaseModel):
     errors: List[str]
     has_outline: bool
     has_essay: bool
-    analysis_results: Dict[str, Any]
+    analysis_results: Optional[AnalysisResults] = None
     essay_summary: Optional[EssaySummary] = None 

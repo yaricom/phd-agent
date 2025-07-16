@@ -103,13 +103,12 @@ def main():
             logger.info(state.final_essay.content)
         
         # Show analysis results if available
-        if state.analysis_results:
+        if state.analysis_results and state.analysis_results.data_summary:
             logger.info(f"Analysis Results:")
-            if 'data_summary' in state.analysis_results:
-                summary = state.analysis_results['data_summary']
-                logger.info(f"  - Total documents: {summary.get('total_documents', 0)}")
-                logger.info(f"  - Source distribution: {summary.get('source_distribution', {})}")
-                logger.info(f"  - Data coverage: {summary.get('data_coverage', 'unknown')}")
+            summary = state.analysis_results.data_summary
+            logger.info(f"  - Total documents: {summary.total_documents}")
+            logger.info(f"  - Source distribution: {summary.source_distribution}")
+            logger.info(f"  - Data coverage: {summary.data_coverage}")
         
         logger.info("Research workflow completed successfully!")
         
