@@ -32,7 +32,7 @@ python src/main.py \
 
 ## 📋 Prerequisites
 
-- **Python 3.8+**
+- **Python 3.11+**
 - **OpenAI API Key** (required for AI features)
 - **Docker** (optional, for Milvus vector database)
 
@@ -119,7 +119,7 @@ curl -X POST "http://localhost:8000/research/start" \
    - For better performance, start Milvus with Docker
 
 3. **"Module not found"**
-   - Run `pip install -r requirements.txt`
+   - Run `pip install -e .`
 
 4. **"Permission denied"**
    - Check file permissions and Python environment
@@ -127,13 +127,13 @@ curl -X POST "http://localhost:8000/research/start" \
 ### Getting Help
 
 - Check the full [README.md](README.md) for detailed documentation
-- Run `python test_system.py` to diagnose issues
+- Run `python check_system.py` to diagnose issues
 - See [examples/](examples/) for more usage examples
 
 ## 🎉 Next Steps
 
 1. **Explore Examples**: Check out `examples/basic_research.py`
-2. **Customize Agents**: Modify agent behavior in `agents/`
+2. **Customize Agents**: Modify agent behavior in `src/phd_agent/agents/`
 3. **Add Data Sources**: Extend the system with new document types
 4. **Scale Up**: Deploy with proper Milvus setup for production use
 

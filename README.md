@@ -263,7 +263,7 @@ python src/main.py --topic "Your Topic" --no-web-search
 
 ### Adding New Agents
 
-1. Create a new agent class in `agents/`
+1. Create a new agent class in `src/phd_agent/agents/`
 2. Implement the `run()` method
 3. Add the agent to the supervisor workflow
 
