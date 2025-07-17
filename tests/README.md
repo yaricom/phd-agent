@@ -16,9 +16,9 @@ Run all tests:
 python -m pytest tests
 ```
 
-Run specific test file:
+Run a specific test file:
 ```bash
-python -m pytest tests/test_file_utils.py
+python -m pytest tests/unit/test_file_utils.py
 ```
 
 Run with coverage:

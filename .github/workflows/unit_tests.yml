@@ -1,0 +1,51 @@
+---
+name: Unit Tests
+run-name: "Unit Tests ${{ github.ref_name }} by @${{ github.actor }}"
+on:
+  pull_request:
+  push:
+    branches:
+      - 'main'
+jobs:
+  UnitTests:
+    name: Units_Python_${{matrix.python_version}}
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: sdks/python/
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: [
+          "3.11",
+          "3.12",
+          "3.13"
+        ]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Print environment variables
+        run: env
+
+      - name: Print event object
+        run: cat $GITHUB_EVENT_PATH
+
+      - name: Print the PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: echo "$PR_TITLE"
+
+      - name: Setup Python ${{ matrix.python_version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Install PhD Agent developer mode
+        run: pip install ".[dev,formats]"
+
+      - name: Running Unit Tests
+        run: python -m pytest --cov=src/phd_agent -vv tests/unit/ --junitxml=${{ github.workspace }}/test_results.xml
