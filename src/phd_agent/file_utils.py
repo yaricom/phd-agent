@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def write_essay_txt(essay: Essay, output_path: str) -> bool:
-    """Write essay to a text file."""
+    """Write an essay to a text file."""
     try:
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(f"Title: {essay.title}\n")
@@ -39,7 +39,7 @@ def write_essay_txt(essay: Essay, output_path: str) -> bool:
 
 
 def write_essay_pdf(essay: Essay, output_path: str) -> bool:
-    """Write essay to a PDF file."""
+    """Write an essay to a PDF file."""
     # Try to import reportlab for PDF generation
     try:
         from reportlab.lib.pagesizes import A4
@@ -131,7 +131,7 @@ def write_essay_pdf(essay: Essay, output_path: str) -> bool:
 
 
 def write_essay_docx(essay: Essay, output_path: str) -> bool:
-    """Write essay to a DOCX file."""
+    """Write an essay to a DOCX file."""
     # Try to import python-docx for DOCX generation
     try:
         from docx import Document
@@ -187,30 +187,30 @@ def write_essay_docx(essay: Essay, output_path: str) -> bool:
         return False
 
 
-def write_essay(essay: Essay, output_path: str, format: str = "auto") -> bool:
+def write_essay(essay: Essay, output_path: str, output_format: str = "auto") -> bool:
     """
-    Write essay to file in the specified format.
+    Write an essay to file in the specified format.
 
     Args:
         essay: The essay to write
         output_path: Output file path
-        format: Format to use ("txt", "pdf", "docx", or "auto" to detect from extension)
+        output_format: The output format to use ("txt", "pdf", "docx", or "auto" to detect from extension)
 
     Returns:
         bool: True if successful, False otherwise
     """
-    if format == "auto":
+    if output_format == "auto":
         # Detect format from file extension
         ext = Path(output_path).suffix.lower()
         if ext == ".txt":
-            format = "txt"
+            output_format = "txt"
         elif ext == ".pdf":
-            format = "pdf"
+            output_format = "pdf"
         elif ext == ".docx":
-            format = "docx"
+            output_format = "docx"
         else:
             # Default to txt if no extension or unknown extension
-            format = "txt"
+            output_format = "txt"
             if not output_path.endswith(".txt"):
                 output_path += ".txt"
 
@@ -219,19 +219,19 @@ def write_essay(essay: Essay, output_path: str, format: str = "auto") -> bool:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Write based on format
-    if format.lower() == "txt":
+    if output_format.lower() == "txt":
         return write_essay_txt(essay, output_path)
-    elif format.lower() == "pdf":
+    elif output_format.lower() == "pdf":
         return write_essay_pdf(essay, output_path)
-    elif format.lower() == "docx":
+    elif output_format.lower() == "docx":
         return write_essay_docx(essay, output_path)
     else:
-        logger.error(f"Unsupported format: {format}")
+        logger.error(f"Unsupported format: {output_format}")
         return False
 
 
 def get_supported_formats() -> list[str]:
-    """Get list of supported output formats."""
+    """Get a list of supported output formats."""
     formats = ["txt"]
 
     try:

@@ -13,13 +13,15 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
-from phd_agent.agents.supervisor_agent import SupervisorAgent  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
 
 def main():
     """Run a basic research example."""
+    # import dependencies
+    from phd_agent.agents.supervisor_agent import SupervisorAgent
+    from phd_agent.file_utils import write_essay
 
     logger.info("=" * 60)
     logger.info("PhD Agent - Basic Research Example")
@@ -76,12 +78,9 @@ def main():
             logger.info(f"Sources Used: {len(state.final_essay.sources)}")
 
             # Save essay to file using file_utils
-            from phd_agent.file_utils import write_essay, get_supported_formats
-
             output_file = "ai_education_essay.txt"
             if write_essay(state.final_essay, output_file):
                 logger.info(f"Essay saved to: {output_file}")
-                logger.info(f"Supported formats: {', '.join(get_supported_formats())}")
             else:
                 logger.error(f"Failed to save essay to: {output_file}")
 

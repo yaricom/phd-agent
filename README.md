@@ -146,7 +146,7 @@ The project includes comprehensive unit tests for all modules.
 
 #### Install test dependencies
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[dev,formats]"
 ```
 
 #### Run all tests
@@ -301,6 +301,18 @@ if state.final_essay:
     print(f"Word count: {state.final_essay.word_count}")
     print(f"Content: {state.final_essay.content}")
 ```
+
+### Support for different output formats
+
+The essay can be written to the file using the following output formats TXT, PDF, DOCX. 
+
+To support PDF and DOCX additional libraries should be installed:
+
+```bash
+pip install ".[formats]"
+```
+
+The output format is detected from the output file name extension defaulting to .txt if not recognized.  
 
 ## 📊 Workflow Steps
 

@@ -10,9 +10,6 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
-from phd_agent.agents.supervisor_agent import SupervisorAgent  # noqa: E402
-from phd_agent.file_utils import write_essay, get_supported_formats  # noqa: E402
-
 logger = logging.getLogger(__name__)
 
 
@@ -33,7 +30,10 @@ def get_output_files():
 
 
 def main():
-    """Run a basic research example."""
+    """Run a NEAT research example."""
+    # import dependencies
+    from phd_agent.agents.supervisor_agent import SupervisorAgent
+    from phd_agent.file_utils import write_essay
 
     logger.info("=" * 60)
     logger.info("PhD Agent - NEAT fundamentals Research Example")
@@ -99,7 +99,7 @@ def main():
             for error in status.errors:
                 logger.error(f"  - {error}")
 
-        # Show essay if available
+        # Show an essay if available
         if state.final_essay:
             logger.info(f"Essay Title: {state.final_essay.title}")
             logger.info(f"Word Count: {state.final_essay.word_count}")
@@ -109,9 +109,6 @@ def main():
             for output_file in get_output_files():
                 if write_essay(state.final_essay, output_file):
                     logger.info(f"Essay saved to: {output_file}")
-                    logger.info(
-                        f"Supported formats: {', '.join(get_supported_formats())}"
-                    )
                 else:
                     logger.error(f"Failed to save essay to: {output_file}")
 

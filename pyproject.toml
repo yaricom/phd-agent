@@ -32,7 +32,8 @@ dev = [
     "black",
     "pre-commit",
     "mypy",
-    "bandit"
+    "bandit",
+    "tomlkit"
 ]
 api = [
     "python-multipart"
