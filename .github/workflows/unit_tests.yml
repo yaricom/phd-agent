@@ -11,10 +11,6 @@ jobs:
     name: Units_Python_${{matrix.python_version}}
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: sdks/python/
-
     strategy:
       fail-fast: false
       matrix:
