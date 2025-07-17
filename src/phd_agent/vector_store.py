@@ -19,6 +19,20 @@ from .models import DocumentSource, DocumentType
 logger = logging.getLogger(__name__)
 
 
+vector_store = None
+
+
+def get_vector_store():
+    global vector_store
+    if vector_store is None:
+        try:
+            vector_store = MilvusVectorStore()
+        except Exception as e:
+            logger.error(f"Milvus is not available ({e})", exc_info=True)
+            raise
+    return vector_store
+
+
 class MilvusVectorStore:
     """Vector database service using Milvus for document storage and retrieval."""
 
@@ -27,21 +41,8 @@ class MilvusVectorStore:
         self.embedding_model = OpenAIEmbeddings(model="text-embedding-3-large")
         self.dimension = 256  # text-embedding-3-large dimension
         self.collection = None
-        self._connect()
+        _connect()
         self._setup_collection()
-
-    def _connect(self):
-        """Connect to Milvus server."""
-        try:
-            connections.connect(
-                alias="default", host=config.MILVUS_HOST, port=config.MILVUS_PORT
-            )
-            logger.info(
-                f"Connected to Milvus at {config.MILVUS_HOST}:{config.MILVUS_PORT}"
-            )
-        except Exception as e:
-            logger.error(f"Failed to connect to Milvus: {e}")
-            raise
 
     def _setup_collection(self):
         """Setup the collection schema and create if it doesn't exist."""
@@ -85,18 +86,12 @@ class MilvusVectorStore:
         embedding = self.embedding_model.embed_query(text)
         return embedding
 
-    def _truncate_field(self, text: str, max_length: int) -> str:
-        """Truncate text to fit within the specified maximum length."""
-        if len(text) <= max_length:
-            return text
-        return text[: max_length - 3] + "..."
-
     def add_document(self, document: DocumentSource) -> str:
         """Add a document to the vector store."""
         if not document.id:
             document.id = str(uuid.uuid4())
 
-        # Check if collection is available
+        # Check if a collection is available
         if self.collection is None:
             raise Exception("Milvus collection not available")
 
@@ -104,11 +99,11 @@ class MilvusVectorStore:
         embedding = self._get_embedding(document.content)
 
         # Truncate fields to fit Milvus schema limits
-        truncated_title = self._truncate_field(document.title, 500)
-        truncated_content = self._truncate_field(document.content, 65535)
-        truncated_url = self._truncate_field(document.url or "", 1000)
-        truncated_file_path = self._truncate_field(document.file_path or "", 500)
-        truncated_metadata = self._truncate_field(str(document.metadata), 2000)
+        truncated_title = _truncate_field(document.title, 500)
+        truncated_content = _truncate_field(document.content, 65535)
+        truncated_url = _truncate_field(document.url or "", 1000)
+        truncated_file_path = _truncate_field(document.file_path or "", 500)
+        truncated_metadata = _truncate_field(str(document.metadata), 2000)
 
         # Log if truncation occurred
         if len(document.title) > 500:
@@ -148,11 +143,11 @@ class MilvusVectorStore:
         self, query: str, top_k: int = 5, filter_dict: Optional[Dict] = None
     ) -> List[DocumentSource]:
         """Search for similar documents."""
-        # Check if collection is available
+        # Check if a collection is available
         if self.collection is None:
             raise Exception("Milvus collection not available")
 
-        # Load collection before searching
+        # Load a collection before searching
         self.collection.load()
 
         # Generate query embedding
@@ -203,7 +198,7 @@ class MilvusVectorStore:
 
     def get_document_by_id(self, doc_id: str) -> Optional[DocumentSource]:
         """Retrieve a document by ID."""
-        # Check if collection is available
+        # Check if a collection is available
         if self.collection is None:
             raise Exception("Milvus collection not available")
 
@@ -240,7 +235,7 @@ class MilvusVectorStore:
 
     def delete_document(self, doc_id: str) -> bool:
         """Delete a document by ID."""
-        # Check if collection is available
+        # Check if a collection is available
         if self.collection is None:
             raise Exception("Milvus collection not available")
 
@@ -253,7 +248,7 @@ class MilvusVectorStore:
 
     def get_collection_stats(self) -> Dict[str, Any]:
         """Get collection statistics."""
-        # Check if collection is available
+        # Check if a collection is available
         if self.collection is None:
             return {
                 "total_documents": 0,
@@ -268,17 +263,49 @@ class MilvusVectorStore:
         return stats
 
 
-vector_store = None
+def store_documents(documents: List[DocumentSource]) -> List[str]:
+    """Store documents in the vector database."""
+    stored_ids = []
 
-
-def get_vector_store():
-    global vector_store
-    if vector_store is None:
+    for document in documents:
         try:
-            vector_store = MilvusVectorStore()
+            doc_id = get_vector_store().add_document(document)
+            stored_ids.append(doc_id)
         except Exception as e:
-            logger.warning(f"Milvus not available ({e}), using mock vector store")
-            from .vector_store_mock import mock_vector_store
+            logger.error(
+                f"Error storing document {document.title}, reason: {e}", exc_info=True
+            )
+            continue
 
-            vector_store = mock_vector_store
-    return vector_store
+    return stored_ids
+
+
+def search_local_documents(query: str, top_k: int = 5) -> List[DocumentSource]:
+    """Search for relevant documents in the local vector database."""
+    try:
+        documents = get_vector_store().search_similar(query, top_k=top_k)
+        return documents
+    except Exception as e:
+        logger.error(f"Error searching local documents: {e}", exc_info=True)
+        return []
+
+
+def _truncate_field(text: str, max_length: int) -> str:
+    """Truncate text to fit within the specified maximum length."""
+    if len(text) <= max_length:
+        return text
+    return text[: max_length - 3] + "..."
+
+
+def _connect():
+    """Connect to Milvus server."""
+    try:
+        connections.connect(
+            alias="default", host=config.MILVUS_HOST, port=config.MILVUS_PORT
+        )
+        logger.info(f"Connected to Milvus at {config.MILVUS_HOST}:{config.MILVUS_PORT}")
+    except Exception:
+        logger.error(
+            "Failed to connect to Milvus. Set MILVUS_HOST and MILVUS_PORT in .env to enable Milvus."
+        )
+        raise

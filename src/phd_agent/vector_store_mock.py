@@ -99,7 +99,3 @@ class MockVectorStore:
             "total_documents": len(self.documents),
             "collection_name": "mock_collection",
         }
-
-
-# Global mock vector store instance
-mock_vector_store = MockVectorStore()

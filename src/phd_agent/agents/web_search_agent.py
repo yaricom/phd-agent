@@ -1,19 +1,19 @@
-import requests
-import uuid
 import logging
+import time
+import uuid
 from typing import List, Optional
 from urllib.parse import urlparse
-import time
 
+import requests
 from bs4 import BeautifulSoup
 from ddgs import DDGS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
 
-from ..models import DocumentSource, DocumentType, SearchResult, AgentState
-from ..vector_store import get_vector_store
 from ..config import config
+from ..models import DocumentSource, DocumentType, SearchResult, AgentState
+from ..vector_store import store_documents
 
 logger = logging.getLogger(__name__)
 
@@ -155,21 +155,6 @@ class WebSearchAgent:
 
         return documents
 
-    def store_web_documents(self, documents: List[DocumentSource]) -> List[str]:
-        """Store web documents in the vector database."""
-        stored_ids = []
-
-        for document in documents:
-            try:
-                doc_id = get_vector_store().add_document(document)
-                stored_ids.append(doc_id)
-            except Exception as e:
-                logger.error(f"Error storing web document {document.title}: {e}")
-                continue
-
-        logger.info(f"Stored {len(stored_ids)} web documents in vector database")
-        return stored_ids
-
     def search_relevant_web_content(
         self, topic: str, requirements: str, max_results: Optional[int] = None
     ) -> List[DocumentSource]:
@@ -196,10 +181,14 @@ class WebSearchAgent:
 
                 # Store documents
                 if documents:
-                    stored_ids = self.store_web_documents(documents)
+                    stored_ids = store_documents(documents)
                     for doc, doc_id in zip(documents, stored_ids):
                         doc.source_id = doc_id
                     all_documents.extend(documents)
+
+                    logger.info(
+                        f"Stored {len(stored_ids)} web documents in vector database"
+                    )
 
                 # Add delay between searches
                 time.sleep(2)

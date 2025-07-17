@@ -1,16 +1,17 @@
-import os
-import fitz  # PyMuPDF
-import uuid
 import logging
-from typing import List, Dict, Any, Optional
+import os
+import uuid
 from pathlib import Path
+from typing import List, Optional
 
+import fitz  # PyMuPDF
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
-from ..models import DocumentSource, DocumentType, AgentState
-from ..vector_store import get_vector_store
+
 from ..config import config
+from ..models import DocumentSource, DocumentType, AgentState
+from ..vector_store import store_documents, search_local_documents
 
 logger = logging.getLogger(__name__)
 
@@ -99,41 +100,6 @@ class PDFAgent:
 
         return all_documents
 
-    def store_documents(self, documents: List[DocumentSource]) -> List[str]:
-        """Store documents in the vector database."""
-        stored_ids = []
-
-        for document in documents:
-            try:
-                doc_id = get_vector_store().add_document(document)
-                stored_ids.append(doc_id)
-            except Exception as e:
-                logger.error(f"Error storing document {document.title}: {e}")
-                continue
-
-        logger.info(f"Stored {len(stored_ids)} documents in vector database")
-        return stored_ids
-
-    def search_local_documents(
-        self, query: str, top_k: int = 5
-    ) -> List[DocumentSource]:
-        """Search for relevant documents in the local vector database."""
-        try:
-            documents = get_vector_store().search_similar(query, top_k=top_k)
-            return documents
-        except Exception as e:
-            logger.error(f"Error searching local documents: {e}")
-            return []
-
-    def get_document_statistics(self) -> Dict[str, Any]:
-        """Get statistics about stored documents."""
-        try:
-            stats = get_vector_store().get_collection_stats()
-            return stats
-        except Exception as e:
-            logger.error(f"Error getting document statistics: {e}")
-            return {"error": str(e)}
-
     def run(
         self, state: AgentState, pdf_paths: Optional[List[str]] = None
     ) -> AgentState:
@@ -154,16 +120,16 @@ class PDFAgent:
 
                 # Store new documents
                 if new_documents:
-                    stored_ids = self.store_documents(new_documents)
+                    stored_ids = store_documents(new_documents)
                     for doc, doc_id in zip(new_documents, stored_ids):
                         doc.source_id = doc_id
                     state.documents.extend(new_documents)
                     logger.info(
-                        f"PDF Agent: Processed and stored {len(new_documents)} new documents"
+                        f"PDF Agent: Processed and stored {len(new_documents)} new PDF documents"
                     )
 
             # Search for relevant documents based on the task
-            relevant_docs = self.search_local_documents(
+            relevant_docs = search_local_documents(
                 state.task.topic + " " + state.task.requirements,
                 top_k=state.task.max_sources,
             )
