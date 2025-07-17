@@ -34,6 +34,10 @@ dev = [
 api = [
     "python-multipart"
 ]
+formats = [
+    "reportlab>=4.0.0",
+    "python-docx>=1.1.0"
+]
 
 [project.scripts]
 phd-agent = "phd_agent.main:main"

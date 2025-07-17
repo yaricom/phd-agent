@@ -165,23 +165,15 @@ Examples:
             logger.info(f"Word Count: {state.final_essay.word_count}")
             logger.info(f"Sources Used: {len(state.final_essay.sources)}")
             
-            # Save essay to file
-            output_file = args.output or "essay_output.txt"
-            with open(output_file, 'w', encoding='utf-8') as f:
-                f.write(f"Title: {state.final_essay.title}\n")
-                f.write(f"Word Count: {state.final_essay.word_count}\n")
-                f.write(f"Sources: {len(state.final_essay.sources)}\n")
-                f.write("=" * 50 + "\n\n")
-                f.write(state.final_essay.content)
-                f.write("\n\n" + "=" * 50 + "\n")
-                f.write("SOURCES:\n")
-                for i, source in enumerate(state.final_essay.sources, 1):
-                    f.write(f"{i}. {source.title} ({source.source_type.value})\n")
-                    if source.url:
-                        f.write(f"   URL: {source.url}\n")
-                    f.write("\n")
+            # Save essay to file using file_utils
+            from phd_agent.file_utils import write_essay, get_supported_formats
             
-            logger.info(f"Essay saved to: {output_file}")
+            output_file = args.output or "essay_output.txt"
+            if write_essay(state.final_essay, output_file):
+                logger.info(f"Essay saved to: {output_file}")
+                logger.info(f"Supported formats: {', '.join(get_supported_formats())}")
+            else:
+                logger.error(f"Failed to save essay to: {output_file}")
             
             # Show essay content if verbose
             if args.verbose:

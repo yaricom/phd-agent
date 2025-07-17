@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 """
-Basic Research Example
-
-This example demonstrates how to use the PhD Agent multi-agent research system
-for a simple research task without PDF documents.
+The research example to study NEAT algorithm.
 """
 
 import sys
@@ -14,15 +11,35 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
 from phd_agent.agents.supervisor_agent import SupervisorAgent
-from phd_agent.config import config
+from phd_agent.file_utils import write_essay, get_supported_formats
 
 logger = logging.getLogger(__name__)
+
+
+# Define the output files for the final essay output
+output_files = ["neat_essay.txt", "neat_essay.pdf", "neat_essay.docx"]
+# Define the PDF files to be used for the research
+pdf_files = ["Evolving NN through Augmenting Topologies.pdf"]
+
+
+def get_pdf_paths():
+    """Get the full paths to the PDF files."""
+    return [
+        str(project_root / "data" / pdf_file) for pdf_file in pdf_files
+    ]
+
+def get_output_files():
+    """Get the full paths to the output files."""
+    return [
+        str(project_root / "output" / output_file) for output_file in output_files
+    ]
+
 
 def main():
     """Run a basic research example."""
     
     logger.info("=" * 60)
-    logger.info("PhD Agent - Basic Research Example")
+    logger.info("PhD Agent - NEAT fundamentals Research Example")
     logger.info("=" * 60)
     
     # Initialize the supervisor agent
@@ -30,14 +47,26 @@ def main():
     supervisor = SupervisorAgent()
     
     # Define research parameters
-    topic = "Artificial Intelligence in Education"
+    topic = "The NEAT algorithm fundamentals"
     requirements = """
-    Analyze the current applications of AI in educational settings, including:
-    1. Personalized learning systems
-    2. Automated grading and assessment
-    3. Intelligent tutoring systems
-    4. Challenges and limitations
-    5. Future trends and opportunities
+    Analyze the NEAT algorithm fundamentals, including:
+    1. The evolutionary algorithms basis
+    2. The historical origins of the NEAT algorithm
+    3. The key components of the NEAT algorithm
+    4. The fitness function and how it works
+    5. The mutation and crossover operators
+    6. The role of the innovation number
+    7. The role of the crossover probability
+    8. The role of the mutation probability
+    9. The role of the population size
+    10. The role of the number of generations
+    11. The role of the elitism
+    12. How NEAT algorithm is used to evolve artificial neural networks
+    13. How it compares to other evolutionary algorithms
+    14. How it compares to deep learning algorithms
+    15. How it is used in the field of artificial intelligence
+    16. How it is used in the field of robotics
+    17. Future trends and opportunities
     """
     
     logger.info(f"\nResearch Topic: {topic}")
@@ -50,8 +79,9 @@ def main():
         state = supervisor.run(
             topic=topic,
             requirements=requirements,
-            max_sources=8,
-            essay_length="medium"
+            max_sources=10,
+            essay_length="medium",
+            pdf_paths=get_pdf_paths()
         )
         
         # Display results
@@ -79,14 +109,12 @@ def main():
             logger.info(f"Sources Used: {len(state.final_essay.sources)}")
             
             # Save essay to file using file_utils
-            from phd_agent.file_utils import write_essay, get_supported_formats
-            
-            output_file = "ai_education_essay.txt"
-            if write_essay(state.final_essay, output_file):
-                logger.info(f"Essay saved to: {output_file}")
-                logger.info(f"Supported formats: {', '.join(get_supported_formats())}")
-            else:
-                logger.error(f"Failed to save essay to: {output_file}")
+            for output_file in get_output_files():
+                if write_essay(state.final_essay, output_file):
+                    logger.info(f"Essay saved to: {output_file}")
+                    logger.info(f"Supported formats: {', '.join(get_supported_formats())}")
+                else:
+                    logger.error(f"Failed to save essay to: {output_file}")
             
             # Show essay content
             logger.info("\n" + "=" * 60)
