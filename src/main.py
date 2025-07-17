@@ -7,12 +7,12 @@ It provides a command-line interface for running research workflows.
 """
 
 import argparse
-import sys
 import logging
 from pathlib import Path
 
-from phd_agent.agents.supervisor_agent import SupervisorAgent
 from phd_agent.config import config
+from phd_agent.models import ResearchParameters
+from phd_agent.research_manager import run_research
 
 logger = logging.getLogger(__name__)
 
@@ -99,107 +99,16 @@ Examples:
                 continue
             pdf_paths.append(str(path_obj.absolute()))
 
-    try:
-        # Initialize supervisor agent
-        logger.info("Initializing Multi-Agent Research System...")
-        supervisor = SupervisorAgent()
-
-        if args.status_only:
-            # Just show system status
-            logger.info("System Status:")
-            logger.info(
-                f"- OpenAI API Key: {'Configured' if config.OPENAI_API_KEY else 'Missing'}"
-            )
-            logger.info(f"- Milvus Host: {config.MILVUS_HOST}:{config.MILVUS_PORT}")
-            logger.info(f"- Model: {config.OPENAI_MODEL}")
-            logger.info(
-                f"- Web Search: {'Enabled' if config.ENABLE_WEB_SEARCH else 'Disabled'}"
-            )
-            return
-
-        # Run the research workflow
-        logger.info(f"Starting research on: {args.topic}")
-        logger.info(f"Requirements: {args.requirements}")
-        logger.info(f"Max sources: {args.max_sources}")
-        logger.info(f"Essay length: {args.essay_length}")
-        logger.info(
-            f"Web search: {'Enabled' if config.ENABLE_WEB_SEARCH else 'Disabled'}"
-        )
-        if pdf_paths:
-            logger.info(f"PDF paths: {pdf_paths}")
-        logger.info("-" * 50)
-
-        state = supervisor.run(
-            topic=args.topic,
-            requirements=args.requirements,
-            max_sources=args.max_sources,
-            essay_length=args.essay_length,
-            pdf_paths=pdf_paths,
-        )
-
-        # Display results
-        logger.info("\n" + "=" * 50)
-        logger.info("RESEARCH RESULTS")
-        logger.info("=" * 50)
-
-        # Show workflow status
-        status = supervisor.get_workflow_status(state)
-        logger.info(f"Task: {status.task.topic}")
-        logger.info(f"Current Step: {status.current_step}")
-        logger.info(f"Documents Collected: {status.documents_collected}")
-        logger.info(f"Search Results: {status.search_results}")
-        logger.info(f"Has Essay: {status.has_essay}")
-
-        if status.errors:
-            logger.error(f"Errors encountered: {len(status.errors)}")
-            for error in status.errors:
-                logger.error(f"  - {error}")
-
-        # Show essay if available
-        if state.final_essay:
-            logger.info(f"Essay Title: {state.final_essay.title}")
-            logger.info(f"Word Count: {state.final_essay.word_count}")
-            logger.info(f"Sources Used: {len(state.final_essay.sources)}")
-
-            # Save essay to file using file_utils
-            from phd_agent.file_utils import write_essay, get_supported_formats
-
-            output_file = args.output or "essay_output.txt"
-            if write_essay(state.final_essay, output_file):
-                logger.info(f"Essay saved to: {output_file}")
-                logger.info(f"Supported formats: {', '.join(get_supported_formats())}")
-            else:
-                logger.error(f"Failed to save essay to: {output_file}")
-
-            # Show essay content if verbose
-            if args.verbose:
-                logger.info("\n" + "=" * 50)
-                logger.info("ESSAY CONTENT")
-                logger.info("=" * 50)
-                logger.info(state.final_essay.content)
-
-        # Show analysis results if available
-        if state.analysis_results and state.analysis_results.data_summary:
-            logger.info("Analysis Results:")
-            summary = state.analysis_results.data_summary
-            logger.info(f"  - Total documents: {summary.total_documents}")
-            logger.info(f"  - Source distribution: {summary.source_distribution}")
-            logger.info(f"  - Data coverage: {summary.data_coverage}")
-        else:
-            logger.info("No analysis results available - research incomplete")
-
-        logger.info("Research workflow completed!")
-
-    except KeyboardInterrupt:
-        logger.info("Research interrupted by user.")
-        sys.exit(1)
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        if args.verbose:
-            import traceback
-
-            traceback.print_exc()
-        sys.exit(1)
+    parameters = ResearchParameters(
+        topic=args.topic,
+        requirements=args.requirements,
+        max_sources=args.max_sources,
+        essay_length=args.essay_length,
+        pdf_paths=pdf_paths,
+        output_files=[args.output],
+        verbose=args.verbose,
+    )
+    run_research(parameters, status_only=args.status_only)
 
 
 if __name__ == "__main__":

@@ -4,18 +4,24 @@ FastAPI Web Interface for Multi-Agent Research System
 This module provides a REST API for the PhD Agent multi-agent research system.
 """
 
+import shutil
+import tempfile
+import uuid
+from pathlib import Path
+from typing import List, Optional, Dict, Any
+
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
-import uuid
-from pathlib import Path
-import tempfile
-import shutil
 
-from phd_agent.agents.supervisor_agent import SupervisorAgent
-from phd_agent.models import AgentState
+from phd_agent.agents.agent_utils import create_workflow_status
+from phd_agent.agents.supervisor_agent import (
+    SupervisorAgent,
+    create_research_task,
+    initialize_state,
+)
 from phd_agent.config import config
+from phd_agent.models import AgentState
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -91,8 +97,8 @@ async def start_research(request: ResearchRequest):
         if not request.enable_web_search:
             config.ENABLE_WEB_SEARCH = False
 
-        # Create research task
-        task = supervisor.create_research_task(
+        # Create a research task
+        task = create_research_task(
             topic=request.topic,
             requirements=request.requirements,
             max_sources=request.max_sources,
@@ -100,7 +106,7 @@ async def start_research(request: ResearchRequest):
         )
 
         # Initialize state
-        state = supervisor.initialize_state(task)
+        state = initialize_state(task)
 
         # Store in memory
         research_tasks[task_id] = state
@@ -131,7 +137,7 @@ async def get_task_status(task_id: str):
         raise HTTPException(status_code=404, detail="Task not found")
 
     state = research_tasks[task_id]
-    status = supervisor.get_workflow_status(state)
+    status = create_workflow_status(state)
 
     return TaskStatus(
         task_id=task_id,
@@ -266,7 +272,7 @@ async def upload_pdfs(task_id: str, files: List[UploadFile] = File(...)):
     if task_id not in research_tasks:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    # Create temporary directory for PDFs
+    # Create a temporary directory for PDFs
     temp_dir = tempfile.mkdtemp()
     pdf_paths = []
 

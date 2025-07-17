@@ -175,3 +175,15 @@ class WorkflowStatus(BaseModel):
     has_essay: bool
     analysis_results: Optional[AnalysisResults] = None
     essay_summary: Optional[EssaySummary] = None
+
+
+class ResearchParameters(BaseModel):
+    """Parameters for a research workflow."""
+
+    topic: str
+    requirements: str
+    max_sources: int
+    essay_length: str
+    output_files: List[str]
+    pdf_paths: Optional[List[str]] = None
+    verbose: bool

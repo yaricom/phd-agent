@@ -10,7 +10,7 @@ import logging
 from typing import List, Optional, Dict, Any
 import numpy as np
 
-from .models import DocumentSource
+from phd_agent.models import DocumentSource
 
 logger = logging.getLogger(__name__)
 
