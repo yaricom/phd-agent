@@ -7,7 +7,6 @@ It provides a command-line interface for running research workflows.
 """
 
 import argparse
-import json
 import sys
 import logging
 from pathlib import Path

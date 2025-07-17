@@ -1,7 +1,6 @@
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
 import logging
-import os
 from pathlib import Path
 
 # Get the project root directory (2 levels up from this file)

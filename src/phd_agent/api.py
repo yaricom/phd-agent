@@ -14,7 +14,7 @@ import tempfile
 import shutil
 
 from phd_agent.agents.supervisor_agent import SupervisorAgent
-from phd_agent.models import AgentState, WorkflowStatus
+from phd_agent.models import AgentState
 from phd_agent.config import config
 
 # Initialize FastAPI app

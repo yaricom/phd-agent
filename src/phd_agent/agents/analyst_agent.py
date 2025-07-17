@@ -1,6 +1,5 @@
-import uuid
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 

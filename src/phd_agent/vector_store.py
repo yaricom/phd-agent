@@ -3,7 +3,6 @@ import logging
 from typing import List, Optional, Dict, Any
 from pymilvus import connections, Collection, CollectionSchema, FieldSchema, DataType, utility
 from sentence_transformers import SentenceTransformer
-import numpy as np
 from datetime import datetime
 
 from .config import config

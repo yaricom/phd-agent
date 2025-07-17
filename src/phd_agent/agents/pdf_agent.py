@@ -4,7 +4,6 @@ import uuid
 import logging
 from typing import List, Dict, Any, Optional
 from pathlib import Path
-import re
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import ChatOpenAI
