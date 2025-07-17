@@ -29,7 +29,10 @@ dev = [
     "pytest",
     "pytest-cov",
     "ruff",
-    "black"
+    "black",
+    "pre-commit",
+    "mypy",
+    "bandit"
 ]
 api = [
     "python-multipart"

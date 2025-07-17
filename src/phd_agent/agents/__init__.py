@@ -16,13 +16,13 @@ from .analyst_agent import AnalystAgent
 from .essay_writer_agent import EssayWriterAgent
 
 __all__ = [
-    'SupervisorAgent',
-    'PDFAgent', 
-    'WebSearchAgent',
-    'AnalystAgent',
-    'EssayWriterAgent'
+    "SupervisorAgent",
+    "PDFAgent",
+    "WebSearchAgent",
+    "AnalystAgent",
+    "EssayWriterAgent",
 ]
 
 __version__ = "1.0.0"
 __author__ = "PhD Agent Team"
-__description__ = "Multi-Agent Research System for Deep Research" 
+__description__ = "Multi-Agent Research System for Deep Research"

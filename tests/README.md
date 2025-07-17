@@ -13,25 +13,19 @@ pip install -e ".[dev]"
 
 Run all tests:
 ```bash
-pytest
+python -m pytest tests
 ```
 
 Run specific test file:
 ```bash
-pytest tests/test_file_utils.py
+python -m pytest tests/test_file_utils.py
 ```
 
 Run with coverage:
 ```bash
-pytest --cov=phd_agent
+python -m pytest --cov=phd_agent
 ```
 
-### Using the test runner script
-
-For quick testing without installing pytest globally:
-```bash
-python run_tests.py
-```
 
 ## Test Structure
 

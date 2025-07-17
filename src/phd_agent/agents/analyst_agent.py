@@ -5,22 +5,30 @@ from langchain.prompts import ChatPromptTemplate
 
 from pydantic import SecretStr
 
-from ..models import DocumentSource, RelevanceAssessment, AgentState, AnalysisResults, CollectedDataSummary
+from ..models import (
+    DocumentSource,
+    RelevanceAssessment,
+    AgentState,
+    AnalysisResults,
+    CollectedDataSummary,
+)
 from ..config import config
 
 logger = logging.getLogger(__name__)
 
+
 class AnalystAgent:
     """Agent responsible for analyzing and assessing the relevance of acquired data."""
-    
+
     def __init__(self):
         self.llm = ChatOpenAI(
             model=config.OPENAI_MODEL,
             temperature=config.TEMPERATURE,
-            api_key=SecretStr(config.OPENAI_API_KEY)
+            api_key=SecretStr(config.OPENAI_API_KEY),
         )
-        
-        self.relevance_prompt = ChatPromptTemplate.from_template("""
+
+        self.relevance_prompt = ChatPromptTemplate.from_template(
+            """
         You are an expert research analyst. Analyze the following document for its relevance to the research topic.
         
         Research Topic: {topic}
@@ -43,9 +51,11 @@ class AnalystAgent:
             "key_points": ["Point 1", "Point 2", "Point 3"],
             "confidence": 0.9
         }}
-        """)
-        
-        self.quality_prompt = ChatPromptTemplate.from_template("""
+        """
+        )
+
+        self.quality_prompt = ChatPromptTemplate.from_template(
+            """
         You are an expert research analyst. Evaluate the quality and reliability of the following document.
         
         Document Title: {title}
@@ -69,9 +79,12 @@ class AnalystAgent:
             "biases_limitations": ["List any biases or limitations"],
             "recommendation": "include" or "exclude"
         }}
-        """)
-    
-    def assess_document_relevance(self, document: DocumentSource, topic: str, requirements: str) -> RelevanceAssessment:
+        """
+        )
+
+    def assess_document_relevance(
+        self, document: DocumentSource, topic: str, requirements: str
+    ) -> RelevanceAssessment:
         """Assess the relevance of a single document."""
         try:
             # Prepare the prompt
@@ -80,17 +93,22 @@ class AnalystAgent:
                 requirements=requirements,
                 title=document.title,
                 content=document.content[:2000],  # Limit content length
-                source_type=document.source_type.value
+                source_type=document.source_type.value,
             )
-            
+
             # Get assessment from LLM
             response = self.llm.invoke(messages)
-            
+
             # Parse JSON response
             import json
+
             try:
                 # Handle both string and list response formats
-                content = response.content if isinstance(response.content, str) else str(response.content)
+                content = (
+                    response.content
+                    if isinstance(response.content, str)
+                    else str(response.content)
+                )
                 assessment_data = json.loads(content)
             except json.JSONDecodeError:
                 # Fallback if JSON parsing fails
@@ -98,20 +116,20 @@ class AnalystAgent:
                     "relevance_score": 0.5,
                     "reasoning": "Unable to parse assessment",
                     "key_points": [],
-                    "confidence": 0.5
+                    "confidence": 0.5,
                 }
-            
+
             # Create assessment object
             assessment = RelevanceAssessment(
                 document_id=document.id,
                 relevance_score=assessment_data.get("relevance_score", 0.5),
                 reasoning=assessment_data.get("reasoning", "No reasoning provided"),
                 key_points=assessment_data.get("key_points", []),
-                confidence=assessment_data.get("confidence", 0.5)
+                confidence=assessment_data.get("confidence", 0.5),
             )
-            
+
             return assessment
-            
+
         except Exception as e:
             logger.error(f"Error assessing document {document.title}: {e}")
             # Return default assessment
@@ -120,9 +138,9 @@ class AnalystAgent:
                 relevance_score=0.5,
                 reasoning=f"Error during assessment: {str(e)}",
                 key_points=[],
-                confidence=0.0
+                confidence=0.0,
             )
-    
+
     def assess_document_quality(self, document: DocumentSource) -> Dict[str, Any]:
         """Assess the quality and reliability of a document."""
         try:
@@ -131,17 +149,22 @@ class AnalystAgent:
                 title=document.title,
                 content=document.content[:2000],  # Limit content length
                 source_type=document.source_type.value,
-                url=document.url or "N/A"
+                url=document.url or "N/A",
             )
-            
+
             # Get assessment from LLM
             response = self.llm.invoke(messages)
-            
+
             # Parse JSON response
             import json
+
             try:
                 # Handle both string and list response formats
-                content = response.content if isinstance(response.content, str) else str(response.content)
+                content = (
+                    response.content
+                    if isinstance(response.content, str)
+                    else str(response.content)
+                )
                 quality_data = json.loads(content)
             except json.JSONDecodeError:
                 # Fallback if JSON parsing fails
@@ -151,11 +174,11 @@ class AnalystAgent:
                     "currency_score": 0.5,
                     "overall_quality": "medium",
                     "biases_limitations": ["Unable to assess"],
-                    "recommendation": "include"
+                    "recommendation": "include",
                 }
-            
+
             return quality_data
-            
+
         except Exception as e:
             logger.error(f"Error assessing quality of document {document.title}: {e}")
             return {
@@ -164,47 +187,65 @@ class AnalystAgent:
                 "currency_score": 0.5,
                 "overall_quality": "medium",
                 "biases_limitations": [f"Error during assessment: {str(e)}"],
-                "recommendation": "include"
+                "recommendation": "include",
             }
-    
-    def filter_documents_by_relevance(self, documents: List[DocumentSource], topic: str, requirements: str, threshold: float = 0.6) -> tuple[List[DocumentSource], List[RelevanceAssessment]]:
+
+    def filter_documents_by_relevance(
+        self,
+        documents: List[DocumentSource],
+        topic: str,
+        requirements: str,
+        threshold: float = 0.6,
+    ) -> tuple[List[DocumentSource], List[RelevanceAssessment]]:
         """Filter documents based on relevance threshold."""
         relevant_documents = []
         assessments = []
-        
+
         for document in documents:
             assessment = self.assess_document_relevance(document, topic, requirements)
             assessments.append(assessment)
-            
+
             if assessment.relevance_score >= threshold:
                 relevant_documents.append(document)
-                logger.info(f"Document '{document.title}' - Relevance: {assessment.relevance_score:.2f}")
+                logger.info(
+                    f"Document '{document.title}' - Relevance: {assessment.relevance_score:.2f}"
+                )
             else:
-                logger.info(f"Document '{document.title}' - Relevance: {assessment.relevance_score:.2f} (below threshold)")
-        
+                logger.info(
+                    f"Document '{document.title}' - Relevance: {assessment.relevance_score:.2f} (below threshold)"
+                )
+
         return relevant_documents, assessments
-    
-    def rank_documents_by_quality(self, documents: List[DocumentSource]) -> List[DocumentSource]:
+
+    def rank_documents_by_quality(
+        self, documents: List[DocumentSource]
+    ) -> List[DocumentSource]:
         """Rank documents by quality assessment."""
         document_qualities = []
-        
+
         for document in documents:
             quality = self.assess_document_quality(document)
             document_qualities.append((document, quality))
 
             logger.info(f"Document '{document.title}' - Quality: {quality}")
-        
+
         # Sort by overall quality score (average of credibility, information quality, and currency)
         def quality_score(quality_data):
-            return (quality_data["credibility_score"] + 
-                   quality_data["information_quality"] + 
-                   quality_data["currency_score"]) / 3
-        
-        sorted_documents = sorted(document_qualities, key=lambda x: quality_score(x[1]), reverse=True)
-        
+            return (
+                quality_data["credibility_score"]
+                + quality_data["information_quality"]
+                + quality_data["currency_score"]
+            ) / 3
+
+        sorted_documents = sorted(
+            document_qualities, key=lambda x: quality_score(x[1]), reverse=True
+        )
+
         return [doc for doc, _ in sorted_documents]
-    
-    def generate_data_summary(self, documents: List[DocumentSource], topic: str) -> CollectedDataSummary:
+
+    def generate_data_summary(
+        self, documents: List[DocumentSource], topic: str
+    ) -> CollectedDataSummary:
         """Generate a summary of the collected data."""
         if not documents:
             return CollectedDataSummary(
@@ -213,19 +254,19 @@ class AnalystAgent:
                 average_content_length=0.0,
                 total_content_length=0,
                 research_topic=topic,
-                data_coverage="none"
+                data_coverage="none",
             )
-        
+
         # Count documents by source type
-        source_counts = {}
+        source_counts: Dict[str, int] = {}
         for doc in documents:
             source_type = doc.source_type.value
             source_counts[source_type] = source_counts.get(source_type, 0) + 1
-        
+
         # Calculate average content length
         total_length = sum(len(doc.content) for doc in documents)
         avg_length = total_length / len(documents) if documents else 0
-        
+
         # Determine data coverage
         if len(documents) >= 10:
             coverage = "comprehensive"
@@ -233,57 +274,68 @@ class AnalystAgent:
             coverage = "moderate"
         else:
             coverage = "limited"
-        
+
         return CollectedDataSummary(
             total_documents=len(documents),
             source_distribution=source_counts,
             average_content_length=avg_length,
             total_content_length=total_length,
             research_topic=topic,
-            data_coverage=coverage
+            data_coverage=coverage,
         )
-    
+
     def run(self, state: AgentState) -> AgentState:
         """Main execution method for the analyst agent."""
         try:
             state.current_step = "analyzing_data"
-            
+
             if not state.documents:
                 logger.info("Analyst Agent: No documents to analyze")
                 state.current_step = "analysis_completed"
                 return state
-            
+
             # Assess relevance of all documents
-            logger.info(f"Analyst Agent: Assessing relevance of {len(state.documents)} documents...")
+            logger.info(
+                f"Analyst Agent: Assessing relevance of {len(state.documents)} documents..."
+            )
             relevant_docs, assessments = self.filter_documents_by_relevance(
                 state.documents,
                 state.task.topic,
                 state.task.requirements,
-                threshold=config.RELEVANCE_THRESHOLD
+                threshold=config.RELEVANCE_THRESHOLD,
             )
-            
+
             # Rank documents by quality
-            logger.info(f"Analyst Agent: Ranking {len(relevant_docs)} relevant documents by quality...")
+            logger.info(
+                f"Analyst Agent: Ranking {len(relevant_docs)} relevant documents by quality..."
+            )
             ranked_docs = self.rank_documents_by_quality(relevant_docs)
-            
+
             # Update state with filtered and ranked documents
-            state.documents = ranked_docs[:state.task.max_sources]  # Limit to max sources
-            
+            state.documents = ranked_docs[
+                : state.task.max_sources
+            ]  # Limit to max sources
+
             # Generate data summary
             summary = self.generate_data_summary(state.documents, state.task.topic)
             state.analysis_results = AnalysisResults(
                 data_summary=summary,
                 relevance_assessments=assessments,
                 filtered_documents=[doc.id for doc in state.documents],
-                quality_metrics={"total_assessed": len(assessments), "relevant_found": len(state.documents)}
+                quality_metrics={
+                    "total_assessed": len(assessments),
+                    "relevant_found": len(state.documents),
+                },
             )
-            
+
             state.current_step = "analysis_completed"
-            logger.info(f"Analyst Agent: Analysis completed. {len(state.documents)} high-quality documents selected.")
-            
+            logger.info(
+                f"Analyst Agent: Analysis completed. {len(state.documents)} high-quality documents selected."
+            )
+
         except Exception as e:
             error_msg = f"Analyst Agent error: {str(e)}"
             state.errors.append(error_msg)
             logger.error(error_msg)
-        
-        return state 
+
+        return state

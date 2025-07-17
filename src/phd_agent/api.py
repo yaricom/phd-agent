@@ -21,7 +21,7 @@ from phd_agent.config import config
 app = FastAPI(
     title="PhD Agent - Multi-Agent Research System",
     description="A comprehensive multi-agent system for deep research using PDF analysis, web search, and AI-powered essay writing",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Global supervisor instance
@@ -31,23 +31,29 @@ supervisor = SupervisorAgent()
 research_tasks: Dict[str, AgentState] = {}
 pdf_paths_storage: Dict[str, List[str]] = {}
 
+
 class ResearchRequest(BaseModel):
     """Request model for starting a research task."""
+
     topic: str
     requirements: str
     max_sources: int = 10
     essay_length: str = "medium"
     enable_web_search: bool = True
 
+
 class ResearchResponse(BaseModel):
     """Response model for research task status."""
+
     task_id: str
     status: str
     message: str
     data: Optional[Dict[str, Any]] = None
 
+
 class TaskStatus(BaseModel):
     """Model for task status information."""
+
     task_id: str
     topic: str
     current_step: str
@@ -56,6 +62,7 @@ class TaskStatus(BaseModel):
     has_essay: bool
     errors: List[str]
     created_at: str
+
 
 @app.get("/")
 async def root():
@@ -68,9 +75,10 @@ async def root():
             "get_status": "/research/{task_id}/status",
             "get_essay": "/research/{task_id}/essay",
             "list_tasks": "/research/tasks",
-            "upload_pdfs": "/research/{task_id}/upload-pdfs"
-        }
+            "upload_pdfs": "/research/{task_id}/upload-pdfs",
+        },
     }
+
 
 @app.post("/research/start", response_model=ResearchResponse)
 async def start_research(request: ResearchRequest):
@@ -78,25 +86,25 @@ async def start_research(request: ResearchRequest):
     try:
         # Create task ID
         task_id = str(uuid.uuid4())
-        
+
         # Apply web search configuration
         if not request.enable_web_search:
             config.ENABLE_WEB_SEARCH = False
-        
+
         # Create research task
         task = supervisor.create_research_task(
             topic=request.topic,
             requirements=request.requirements,
             max_sources=request.max_sources,
-            essay_length=request.essay_length
+            essay_length=request.essay_length,
         )
-        
+
         # Initialize state
         state = supervisor.initialize_state(task)
-        
+
         # Store in memory
         research_tasks[task_id] = state
-        
+
         return ResearchResponse(
             task_id=task_id,
             status="started",
@@ -106,22 +114,25 @@ async def start_research(request: ResearchRequest):
                 "requirements": request.requirements,
                 "max_sources": request.max_sources,
                 "essay_length": request.essay_length,
-                "enable_web_search": request.enable_web_search
-            }
+                "enable_web_search": request.enable_web_search,
+            },
         )
-    
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to start research: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to start research: {str(e)}"
+        )
+
 
 @app.get("/research/{task_id}/status", response_model=TaskStatus)
 async def get_task_status(task_id: str):
     """Get the status of a research task."""
     if task_id not in research_tasks:
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     state = research_tasks[task_id]
     status = supervisor.get_workflow_status(state)
-    
+
     return TaskStatus(
         task_id=task_id,
         topic=status.task.topic,
@@ -130,56 +141,59 @@ async def get_task_status(task_id: str):
         search_results=status.search_results,
         has_essay=status.has_essay,
         errors=status.errors,
-        created_at=state.task.created_at.isoformat()
+        created_at=state.task.created_at.isoformat(),
     )
+
 
 @app.post("/research/{task_id}/run")
 async def run_research_task(task_id: str, background_tasks: BackgroundTasks):
     """Run a research task in the background."""
     if task_id not in research_tasks:
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     # Add the research task to background tasks
     background_tasks.add_task(run_research_workflow, task_id)
-    
+
     return {
         "task_id": task_id,
         "status": "running",
-        "message": "Research task started in background"
+        "message": "Research task started in background",
     }
+
 
 async def run_research_workflow(task_id: str):
     """Background task to run the research workflow."""
     try:
         state = research_tasks[task_id]
-        
+
         # Run the workflow
         updated_state = supervisor.run_research_workflow(
             topic=state.task.topic,
             requirements=state.task.requirements,
             max_sources=state.task.max_sources,
-            essay_length=state.task.essay_length
+            essay_length=state.task.essay_length,
         )
-        
+
         # Update the stored state
         research_tasks[task_id] = updated_state
-        
+
     except Exception as e:
         # Update state with error
         if task_id in research_tasks:
             research_tasks[task_id].errors.append(f"Workflow error: {str(e)}")
+
 
 @app.get("/research/{task_id}/essay")
 async def get_essay(task_id: str):
     """Get the final essay for a completed research task."""
     if task_id not in research_tasks:
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     state = research_tasks[task_id]
-    
+
     if not state.final_essay:
         raise HTTPException(status_code=404, detail="Essay not yet completed")
-    
+
     return {
         "task_id": task_id,
         "essay": {
@@ -190,32 +204,33 @@ async def get_essay(task_id: str):
                 {
                     "title": source.title,
                     "type": source.source_type.value,
-                    "url": source.url
+                    "url": source.url,
                 }
                 for source in state.final_essay.sources
             ],
             "outline": {
                 "introduction": state.final_essay.outline.introduction,
                 "main_points": state.final_essay.outline.main_points,
-                "conclusion": state.final_essay.outline.conclusion
-            }
-        }
+                "conclusion": state.final_essay.outline.conclusion,
+            },
+        },
     }
+
 
 @app.get("/research/{task_id}/essay/download")
 async def download_essay(task_id: str):
     """Download the essay as a text file."""
     if task_id not in research_tasks:
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     state = research_tasks[task_id]
-    
+
     if not state.final_essay:
         raise HTTPException(status_code=404, detail="Essay not yet completed")
-    
+
     # Create temporary file
-    temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
-    
+    temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False)
+
     try:
         # Write essay content
         temp_file.write(f"Title: {state.final_essay.title}\n")
@@ -230,88 +245,94 @@ async def download_essay(task_id: str):
             if source.url:
                 temp_file.write(f"   URL: {source.url}\n")
             temp_file.write("\n")
-        
+
         temp_file.close()
-        
+
         return FileResponse(
-            temp_file.name,
-            media_type='text/plain',
-            filename=f"essay_{task_id}.txt"
+            temp_file.name, media_type="text/plain", filename=f"essay_{task_id}.txt"
         )
-    
+
     except Exception as e:
         # Clean up temp file
         Path(temp_file.name).unlink(missing_ok=True)
-        raise HTTPException(status_code=500, detail=f"Failed to create download: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to create download: {str(e)}"
+        )
+
 
 @app.post("/research/{task_id}/upload-pdfs")
 async def upload_pdfs(task_id: str, files: List[UploadFile] = File(...)):
     """Upload PDF files for a research task."""
     if task_id not in research_tasks:
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     # Create temporary directory for PDFs
     temp_dir = tempfile.mkdtemp()
     pdf_paths = []
-    
+
     try:
         # Save uploaded files
         for file in files:
-            if not file.filename or not file.filename.lower().endswith('.pdf'):
+            if not file.filename or not file.filename.lower().endswith(".pdf"):
                 continue
-            
+
             file_path = Path(temp_dir) / file.filename
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             pdf_paths.append(str(file_path))
-        
+
         if not pdf_paths:
             raise HTTPException(status_code=400, detail="No valid PDF files uploaded")
-        
+
         # Store PDF paths for this task
         pdf_paths_storage[task_id] = pdf_paths
-        
+
         return {
             "task_id": task_id,
             "status": "pdfs_uploaded",
             "message": f"Uploaded {len(pdf_paths)} PDF files",
-            "pdf_files": [Path(p).name for p in pdf_paths]
+            "pdf_files": [Path(p).name for p in pdf_paths],
         }
-    
+
     except Exception as e:
         # Clean up temp directory
         shutil.rmtree(temp_dir, ignore_errors=True)
         raise HTTPException(status_code=500, detail=f"Failed to upload PDFs: {str(e)}")
+
 
 @app.get("/research/tasks")
 async def list_tasks():
     """List all research tasks."""
     tasks = []
     for task_id, state in research_tasks.items():
-        tasks.append({
-            "task_id": task_id,
-            "topic": state.task.topic,
-            "current_step": state.current_step,
-            "documents_collected": len(state.documents),
-            "has_essay": state.final_essay is not None,
-            "created_at": state.task.created_at.isoformat()
-        })
-    
+        tasks.append(
+            {
+                "task_id": task_id,
+                "topic": state.task.topic,
+                "current_step": state.current_step,
+                "documents_collected": len(state.documents),
+                "has_essay": state.final_essay is not None,
+                "created_at": state.task.created_at.isoformat(),
+            }
+        )
+
     return {"tasks": tasks}
+
 
 @app.delete("/research/{task_id}")
 async def delete_task(task_id: str):
     """Delete a research task."""
     if task_id not in research_tasks:
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     del research_tasks[task_id]
-    
+
     return {
         "task_id": task_id,
         "status": "deleted",
-        "message": "Task deleted successfully"
+        "message": "Task deleted successfully",
     }
+
 
 @app.get("/health")
 async def health_check():
@@ -321,9 +342,11 @@ async def health_check():
         "openai_configured": bool(config.OPENAI_API_KEY),
         "milvus_host": f"{config.MILVUS_HOST}:{config.MILVUS_PORT}",
         "model": config.OPENAI_MODEL,
-        "web_search_enabled": config.ENABLE_WEB_SEARCH
+        "web_search_enabled": config.ENABLE_WEB_SEARCH,
     }
+
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -95,6 +95,80 @@ A comprehensive multi-agent system for deep research using LangGraph API, featur
    Visit Milvus WEB UI
    http://localhost:9091/webui
 
+## 🔧 Development Setup
+
+### Pre-commit Hooks
+
+This project uses pre-commit hooks to ensure code quality. The hooks will automatically run on each commit to:
+
+- Format code with Black
+- Lint code with Ruff
+- Check for merge conflicts
+- Validate YAML/TOML files
+- Run type checking with MyPy
+- Perform security checks with Bandit
+
+#### Installation
+
+1. **Install development dependencies**
+   ```bash
+   pip install -e ".[dev]"
+   ```
+
+2. **Install pre-commit hooks**
+   ```bash
+   pre-commit install
+   ```
+
+3. **Run hooks manually (optional)**
+   ```bash
+   pre-commit run --all-files
+   ```
+
+#### What the hooks do
+
+- **Black**: Formats Python code to a consistent style
+- **Ruff**: Fast Python linter that finds and fixes common issues
+- **Pre-commit hooks**: Basic file checks (merge conflicts, YAML validation, etc.)
+- **MyPy**: Static type checking for Python code
+- **Bandit**: Security linting to find common security issues
+
+#### Skipping hooks (if needed)
+
+If you need to skip pre-commit hooks for a specific commit:
+```bash
+git commit --no-verify -m "Your commit message"
+```
+
+### Running Tests
+
+The project includes comprehensive unit tests for all modules.
+
+#### Install test dependencies
+```bash
+pip install -e ".[dev]"
+```
+
+#### Run all tests
+```bash
+python -m pytest tests/
+```
+
+#### Run specific test file
+```bash
+python -m pytest tests/test_file_utils.py
+```
+
+#### Run tests with coverage
+```bash
+python -m pytest --cov=phd_agent tests/
+```
+
+#### Run tests in verbose mode
+```bash
+python -m pytest -v tests/
+```
+
 ## ⚙️ Configuration
 
 Create a `.env` file with the following variables:
@@ -291,6 +365,9 @@ python src/main.py --topic "Your Topic" --no-web-search
 ```bash
 # Run basic system check
 python check_system.py
+
+# Run unit tests (see Development Setup section for more details)
+python -m pytest tests/
 ```
 
 ## 📈 Performance
