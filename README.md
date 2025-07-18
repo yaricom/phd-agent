@@ -281,25 +281,25 @@ RELEVANCE_THRESHOLD=0.6
 ### Programmatic Usage
 
 ```python
-from agents.supervisor_agent import SupervisorAgent
+from phd_agent.agents.supervisor_agent import SupervisorAgent
 
 # Initialize supervisor
 supervisor = SupervisorAgent()
 
-# Run research workflow
+# Run a research workflow
 state = supervisor.run(
-    topic="Renewable Energy",
-    requirements="Analyze solar and wind energy adoption trends",
-    max_sources=12,
-    essay_length="long",
-    pdf_paths=["papers/solar.pdf", "papers/wind.pdf"]
+   topic="Renewable Energy",
+   requirements="Analyze solar and wind energy adoption trends",
+   max_relevant_sources=12,
+   essay_length="long",
+   pdf_paths=["papers/solar.pdf", "papers/wind.pdf"]
 )
 
 # Access results
 if state.final_essay:
-    print(f"Essay: {state.final_essay.title}")
-    print(f"Word count: {state.final_essay.word_count}")
-    print(f"Content: {state.final_essay.content}")
+   print(f"Essay: {state.final_essay.title}")
+   print(f"Word count: {state.final_essay.word_count}")
+   print(f"Content: {state.final_essay.content}")
 ```
 
 ### Support for different output formats

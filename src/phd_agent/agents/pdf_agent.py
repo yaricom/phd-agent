@@ -1,17 +1,18 @@
 import logging
 import os
-import uuid
 from pathlib import Path
 from typing import List, Optional
 
 import fitz  # PyMuPDF
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_openai import ChatOpenAI
-from pydantic import SecretStr
 
 from ..config import config
-from ..models import DocumentSource, DocumentType, AgentState
-from ..vector_store import store_documents, search_local_documents
+from ..models import DocumentSource, DocumentType, AgentState, ResearchStep
+from ..vector_store import (
+    store_documents,
+    search_local_documents,
+    get_documents_by_file_path,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +21,6 @@ class PDFAgent:
     """Agent responsible for processing PDF documents and storing them in the vector database."""
 
     def __init__(self):
-        self.llm = ChatOpenAI(
-            model=config.OPENAI_MODEL,
-            temperature=config.TEMPERATURE,
-            api_key=SecretStr(config.OPENAI_API_KEY),
-        )
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=config.MAX_TOKENS_PER_CHUNK,
             chunk_overlap=config.CHUNK_OVERLAP,
@@ -37,7 +33,13 @@ class PDFAgent:
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"PDF file not found: {file_path}")
 
-        documents = []
+        # check if we already have this file in the vector store
+        documents = get_documents_by_file_path(file_path)
+        if documents:
+            logger.info(
+                f"PDF [{file_path}] already processed -> {len(documents)} chunks. Using saved data."
+            )
+            return documents
 
         try:
             # Open PDF
@@ -52,7 +54,9 @@ class PDFAgent:
 
             # Extract metadata
             metadata = doc.metadata or {}
-            title = metadata.get("title", Path(file_path).stem)
+            title = metadata.get("title", None)
+            if title is None:
+                title = Path(file_path).stem
 
             # Split text into chunks
             chunks = self.text_splitter.split_text(full_text)
@@ -61,7 +65,6 @@ class PDFAgent:
             for i, chunk in enumerate(chunks):
                 if chunk.strip():  # Skip empty chunks
                     doc_source = DocumentSource(
-                        id=str(uuid.uuid4()),
                         title=f"{title} - Chunk {i + 1}",
                         content=chunk.strip(),
                         source_type=DocumentType.PDF,
@@ -80,7 +83,7 @@ class PDFAgent:
             logger.info(f"Processed PDF: {file_path} -> {len(documents)} chunks")
 
         except Exception as e:
-            logger.error(f"Error processing PDF {file_path}: {e}")
+            logger.error(f"Error processing PDF {file_path}: {e}", exc_info=True)
             raise
 
         return documents
@@ -105,48 +108,49 @@ class PDFAgent:
     ) -> AgentState:
         """Main execution method for the PDF agent."""
         try:
-            state.current_step = "pdf_processing"
+            state.current_step = ResearchStep.PDF_PROCESSING
 
             if pdf_paths:
                 # Process new PDF files
-                new_documents = []
+                documents = []
                 for pdf_path in pdf_paths:
                     if os.path.isfile(pdf_path):
-                        documents = self.process_pdf_file(pdf_path)
-                        new_documents.extend(documents)
+                        docs = self.process_pdf_file(pdf_path)
+                        documents.extend(docs)
                     elif os.path.isdir(pdf_path):
-                        documents = self.process_pdf_directory(pdf_path)
-                        new_documents.extend(documents)
+                        docs = self.process_pdf_directory(pdf_path)
+                        documents.extend(docs)
 
-                # Store new documents
-                if new_documents:
+                if len(documents) > 0:
+                    # Store only new documents
+                    new_documents = [doc for doc in documents if doc.id is None]
                     stored_ids = store_documents(new_documents)
-                    for doc, doc_id in zip(new_documents, stored_ids):
-                        doc.source_id = doc_id
-                    state.documents.extend(new_documents)
+                    assert len(stored_ids) == len(
+                        new_documents
+                    ), f"Failed to store new documents {len(stored_ids)} != {len(new_documents)}"
+
                     logger.info(
-                        f"PDF Agent: Processed and stored {len(new_documents)} new PDF documents"
+                        f"Processed {len(documents)} PDF documents and stored {len(stored_ids)} new PDF documents"
                     )
 
             # Search for relevant documents based on the task
             relevant_docs = search_local_documents(
                 state.task.topic + " " + state.task.requirements,
-                top_k=state.task.max_sources,
+                top_k=config.MAX_LOCAL_SEARCH_RESULTS,
             )
 
             # Add relevant documents to state
-            for doc in relevant_docs:
-                if doc not in state.documents:
-                    state.documents.append(doc)
+            state.documents.extend(relevant_docs)
 
-            state.current_step = "pdf_completed"
             logger.info(
-                f"PDF Agent: Found {len(relevant_docs)} relevant documents from local storage"
+                f"Found {len(relevant_docs)} relevant documents from local storage"
             )
 
+            state.current_step = ResearchStep.PDF_COMPLETED
+
         except Exception as e:
-            error_msg = f"PDF Agent error: {str(e)}"
+            error_msg = f"PDF processing error: {str(e)}"
             state.errors.append(error_msg)
-            logger.error(error_msg)
+            logger.error(error_msg, exc_info=True)
 
         return state

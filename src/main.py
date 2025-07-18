@@ -102,7 +102,7 @@ Examples:
     parameters = ResearchParameters(
         topic=args.topic,
         requirements=args.requirements,
-        max_sources=args.max_sources,
+        max_relevant_sources=args.max_sources,
         essay_length=args.essay_length,
         pdf_paths=pdf_paths,
         output_files=[args.output],

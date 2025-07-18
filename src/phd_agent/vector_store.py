@@ -38,8 +38,13 @@ class MilvusVectorStore:
 
     def __init__(self):
         self.collection_name = config.MILVUS_COLLECTION_NAME
-        self.embedding_model = OpenAIEmbeddings(model="text-embedding-3-large")
-        self.dimension = 256  # text-embedding-3-large dimension
+        self.dimension = 256
+        self.embedding_model = OpenAIEmbeddings(
+            model="text-embedding-3-large", dimensions=self.dimension
+        )
+        logger.info(
+            f"Using Milvus collection: {self.collection_name} with dimension: {self.dimension}"
+        )
         self.collection = None
         _connect()
         self._setup_collection()
@@ -177,27 +182,28 @@ class MilvusVectorStore:
 
         # Convert results to DocumentSource objects
         documents = []
-        for hit in results:  # type: ignore
-            doc = DocumentSource(
-                id=hit.entity.get("id"),
-                title=hit.entity.get("title"),
-                content=hit.entity.get("content"),
-                source_type=DocumentType(hit.entity.get("source_type")),
-                url=hit.entity.get("url") if hit.entity.get("url") else None,
-                file_path=hit.entity.get("file_path")
-                if hit.entity.get("file_path")
-                else None,
-                metadata=eval(hit.entity.get("metadata"))
-                if hit.entity.get("metadata")
-                else {},
-                created_at=datetime.fromisoformat(hit.entity.get("created_at")),
-            )
-            documents.append(doc)
+        for hits in results:  # type: ignore
+            for hit in hits:
+                doc = DocumentSource(
+                    id=hit.entity.get("id"),
+                    title=hit.entity.get("title"),
+                    content=hit.entity.get("content"),
+                    source_type=DocumentType(hit.entity.get("source_type")),
+                    url=hit.entity.get("url") if hit.entity.get("url") else None,
+                    file_path=hit.entity.get("file_path")
+                    if hit.entity.get("file_path")
+                    else None,
+                    metadata=eval(hit.entity.get("metadata"))
+                    if hit.entity.get("metadata")
+                    else {},
+                    created_at=datetime.fromisoformat(hit.entity.get("created_at")),
+                )
+                documents.append(doc)
 
         return documents
 
-    def get_document_by_id(self, doc_id: str) -> Optional[DocumentSource]:
-        """Retrieve a document by ID."""
+    def query_document(self, expr: str) -> List[DocumentSource]:
+        """Retrieve a document using a query expression."""
         # Check if a collection is available
         if self.collection is None:
             raise Exception("Milvus collection not available")
@@ -205,7 +211,7 @@ class MilvusVectorStore:
         self.collection.load()
 
         results = self.collection.query(
-            expr=f'id == "{doc_id}"',
+            expr=expr,
             output_fields=[
                 "id",
                 "title",
@@ -218,20 +224,26 @@ class MilvusVectorStore:
             ],
         )
 
-        if results:
-            result = results[0]
-            return DocumentSource(
-                id=result.get("id"),
-                title=result.get("title"),
-                content=result.get("content"),
-                source_type=DocumentType(result.get("source_type")),
-                url=result.get("url") if result.get("url") else None,
-                file_path=result.get("file_path") if result.get("file_path") else None,
-                metadata=eval(result.get("metadata")) if result.get("metadata") else {},
-                created_at=datetime.fromisoformat(result.get("created_at")),
+        documents = []
+        for result in results:
+            documents.append(
+                DocumentSource(
+                    id=result.get("id"),
+                    title=result.get("title"),
+                    content=result.get("content"),
+                    source_type=DocumentType(result.get("source_type")),
+                    url=result.get("url") if result.get("url") else None,
+                    file_path=result.get("file_path")
+                    if result.get("file_path")
+                    else None,
+                    metadata=eval(result.get("metadata"))
+                    if result.get("metadata")
+                    else {},
+                    created_at=datetime.fromisoformat(result.get("created_at")),
+                )
             )
 
-        return None
+        return documents
 
     def delete_document(self, doc_id: str) -> bool:
         """Delete a document by ID."""
@@ -288,6 +300,37 @@ def search_local_documents(query: str, top_k: int = 5) -> List[DocumentSource]:
     except Exception as e:
         logger.error(f"Error searching local documents: {e}", exc_info=True)
         return []
+
+
+def query_document(expr: str) -> List[DocumentSource]:
+    """Retrieve a document using a query expression from the vector database."""
+    try:
+        return get_vector_store().query_document(expr)
+    except Exception as e:
+        logger.error(
+            f"Error retrieving document with expression '{expr}': {e}", exc_info=True
+        )
+        raise e
+
+
+def get_document_by_id(doc_id: str) -> List[DocumentSource]:
+    """Retrieve a document by ID from the vector database."""
+    try:
+        return get_vector_store().query_document(f'id == "{doc_id}"')
+    except Exception as e:
+        logger.error(f"Error retrieving document by ID {doc_id}: {e}", exc_info=True)
+        raise e
+
+
+def get_documents_by_file_path(file_path: str) -> List[DocumentSource]:
+    """Retrieve documents by file_path from the vector database."""
+    try:
+        return get_vector_store().query_document(f'file_path == "{file_path}"')
+    except Exception as e:
+        logger.error(
+            f"Error retrieving document by file path {file_path}: {e}", exc_info=True
+        )
+        raise e
 
 
 def _truncate_field(text: str, max_length: int) -> str:

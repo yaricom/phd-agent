@@ -31,7 +31,7 @@ def run_research(parameters: ResearchParameters, status_only: bool = False):
         # Run the research workflow
         logger.info(f"Starting research on: {parameters.topic}")
         logger.info(f"Requirements: {parameters.requirements}")
-        logger.info(f"Max sources: {parameters.max_sources}")
+        logger.info(f"Max relevant sources to use: {parameters.max_relevant_sources}")
         logger.info(f"Essay length: {parameters.essay_length}")
         logger.info(
             f"Web search: {'Enabled' if config.ENABLE_WEB_SEARCH else 'Disabled'}"
@@ -43,13 +43,13 @@ def run_research(parameters: ResearchParameters, status_only: bool = False):
         state = supervisor.run(
             topic=parameters.topic,
             requirements=parameters.requirements,
-            max_sources=parameters.max_sources,
+            max_relevant_sources=parameters.max_relevant_sources,
             essay_length=parameters.essay_length,
             pdf_paths=parameters.pdf_paths,
         )
 
         # Display results
-        logger.info("\n" + "=" * 50)
+        logger.info("=" * 50)
         logger.info("RESEARCH RESULTS")
         logger.info("=" * 50)
 

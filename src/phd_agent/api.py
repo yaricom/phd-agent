@@ -4,6 +4,7 @@ FastAPI Web Interface for Multi-Agent Research System
 This module provides a REST API for the PhD Agent multi-agent research system.
 """
 
+import logging
 import shutil
 import tempfile
 import uuid
@@ -22,6 +23,8 @@ from phd_agent.agents.supervisor_agent import (
 )
 from phd_agent.config import config
 from phd_agent.models import AgentState
+
+logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -43,7 +46,7 @@ class ResearchRequest(BaseModel):
 
     topic: str
     requirements: str
-    max_sources: int = 10
+    max_relevant_sources: int = 10
     essay_length: str = "medium"
     enable_web_search: bool = True
 
@@ -54,7 +57,7 @@ class ResearchResponse(BaseModel):
     task_id: str
     status: str
     message: str
-    data: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 class TaskStatus(BaseModel):
@@ -101,7 +104,7 @@ async def start_research(request: ResearchRequest):
         task = create_research_task(
             topic=request.topic,
             requirements=request.requirements,
-            max_sources=request.max_sources,
+            max_relevant_sources=request.max_relevant_sources,
             essay_length=request.essay_length,
         )
 
@@ -115,16 +118,17 @@ async def start_research(request: ResearchRequest):
             task_id=task_id,
             status="started",
             message="Research task created successfully",
-            data={
+            metadata={
                 "topic": request.topic,
                 "requirements": request.requirements,
-                "max_sources": request.max_sources,
+                "max_relevant_sources": request.max_relevant_sources,
                 "essay_length": request.essay_length,
                 "enable_web_search": request.enable_web_search,
             },
         )
 
     except Exception as e:
+        logger.error(f"Failed to start research: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to start research: {str(e)}"
         )
@@ -176,7 +180,7 @@ async def run_research_workflow(task_id: str):
         updated_state = supervisor.run_research_workflow(
             topic=state.task.topic,
             requirements=state.task.requirements,
-            max_sources=state.task.max_sources,
+            max_relevant_sources=state.task.max_relevant_sources,
             essay_length=state.task.essay_length,
         )
 
@@ -184,6 +188,7 @@ async def run_research_workflow(task_id: str):
         research_tasks[task_id] = updated_state
 
     except Exception as e:
+        logger.error(f"Workflow error: {str(e)}", exc_info=True)
         # Update state with error
         if task_id in research_tasks:
             research_tasks[task_id].errors.append(f"Workflow error: {str(e)}")
@@ -234,7 +239,7 @@ async def download_essay(task_id: str):
     if not state.final_essay:
         raise HTTPException(status_code=404, detail="Essay not yet completed")
 
-    # Create temporary file
+    # Create a temporary file
     temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False)
 
     try:
@@ -259,7 +264,8 @@ async def download_essay(task_id: str):
         )
 
     except Exception as e:
-        # Clean up temp file
+        logger.error(f"Failed to create essay download: {str(e)}", exc_info=True)
+        # Clean up a temp file
         Path(temp_file.name).unlink(missing_ok=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to create download: {str(e)}"
@@ -301,6 +307,7 @@ async def upload_pdfs(task_id: str, files: List[UploadFile] = File(...)):
         }
 
     except Exception as e:
+        logger.error(f"Failed to upload PDFs: {str(e)}", exc_info=True)
         # Clean up temp directory
         shutil.rmtree(temp_dir, ignore_errors=True)
         raise HTTPException(status_code=500, detail=f"Failed to upload PDFs: {str(e)}")

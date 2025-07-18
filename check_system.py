@@ -150,11 +150,11 @@ def test_models():
             id="test-123",
             topic="Test Topic",
             requirements="Test requirements",
-            max_sources=5,
+            max_relevant_sources=5,
             essay_length="medium",
         )
         assert task.topic == "Test Topic"
-        assert task.max_sources == 5
+        assert task.max_relevant_sources == 5
 
         # Test DocumentSource creation
         doc = DocumentSource(

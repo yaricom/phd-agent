@@ -55,7 +55,7 @@ def main():
     parameters = ResearchParameters(
         topic=topic,
         requirements=requirements,
-        max_sources=8,
+        max_relevant_sources=80,
         essay_length="medium",
         pdf_paths=None,
         output_files=get_output_files(),

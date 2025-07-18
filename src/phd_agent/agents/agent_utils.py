@@ -7,7 +7,7 @@ def create_workflow_status(state: AgentState) -> WorkflowStatus:
         "task": TaskDetails(
             topic=state.task.topic,
             requirements=state.task.requirements,
-            max_sources=state.task.max_sources,
+            max_relevant_sources=state.task.max_relevant_sources,
             essay_length=state.task.essay_length,
         ),
         "current_step": state.current_step,
