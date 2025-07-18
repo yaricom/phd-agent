@@ -205,7 +205,7 @@ def test_write_essay_explicit_format_txt(sample_essay, tmpdir):
     """Test explicit format specification for TXT."""
     output_path = os.path.join(tmpdir, "test_essay.custom")
 
-    result = write_essay(sample_essay, output_path, format="txt")
+    result = write_essay(sample_essay, output_path, output_format="txt")
 
     assert result is True
     assert os.path.exists(output_path)
@@ -216,7 +216,7 @@ def test_write_essay_explicit_format_pdf(sample_essay, tmpdir):
     with patch("phd_agent.file_utils.write_essay_pdf", return_value=True) as mock_pdf:
         output_path = os.path.join(tmpdir, "test_essay.custom")
 
-        result = write_essay(sample_essay, output_path, format="pdf")
+        result = write_essay(sample_essay, output_path, output_format="pdf")
 
         assert result is True
         mock_pdf.assert_called_once_with(sample_essay, output_path)
@@ -227,7 +227,7 @@ def test_write_essay_explicit_format_docx(sample_essay, tmpdir):
     with patch("phd_agent.file_utils.write_essay_docx", return_value=True) as mock_docx:
         output_path = os.path.join(tmpdir, "test_essay.custom")
 
-        result = write_essay(sample_essay, output_path, format="docx")
+        result = write_essay(sample_essay, output_path, output_format="docx")
 
         assert result is True
         mock_docx.assert_called_once_with(sample_essay, output_path)
@@ -237,7 +237,7 @@ def test_write_essay_unsupported_format(sample_essay, tmpdir):
     """Test writing with unsupported format."""
     output_path = os.path.join(tmpdir, "test_essay.xyz")
 
-    result = write_essay(sample_essay, output_path, format="xyz")
+    result = write_essay(sample_essay, output_path, output_format="xyz")
 
     assert result is False
 
