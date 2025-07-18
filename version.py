@@ -39,7 +39,7 @@ def update_project_version(new_version):
 
 
 def main():
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 2:
         print("Usage: python version.py <new-version>")
         print("Example: python version.py 2.0.0")
         sys.exit(1)
